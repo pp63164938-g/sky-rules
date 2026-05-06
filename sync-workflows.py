@@ -49,14 +49,12 @@ SYNC_MAP = [
         "dst": HOME / ".gemini" / "GEMINI.md",
         "mode": "file",
     },
-    # Windsurf 全局规则由 Windsurf 自身管理(memories/global_rules.md)
-    # 如需从 sky-rules 管理，取消以下注释并在 rules/ 下创建 global_rules.md
-    # {
-    #     "name": "Windsurf 全局规则",
-    #     "src": SRC_RULES / "global_rules.md",
-    #     "dst": HOME / ".codeium" / "windsurf" / "memories" / "global_rules.md",
-    #     "mode": "file",
-    # },
+    {
+        "name": "Windsurf 全局规则",
+        "src": SRC_RULES / "global-rules.md",
+        "dst": HOME / ".codeium" / "windsurf" / "memories" / "global_rules.md",
+        "mode": "file",
+    },
     # --- Skills (预留) ---
     # {
     #     "name": "Windsurf Skills",
