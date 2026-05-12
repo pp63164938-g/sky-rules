@@ -13,7 +13,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 - 编辑器目录中的文件是**同步产物**，直接修改会在下次同步时被覆盖丢失
 - 如果当前工作区不是 `sky-rules` 仓库，应先确认 `sky-rules` 仓库的位置，再去该仓库中修改
-- 修改完成后，提醒用户运行 `sync-workflows.bat`（或 `python sync-workflows.py`）同步到各编辑器
+- 修改完成后，提醒用户运行 `sync-to-editors-only.bat`（或 `python sync-workflows.py --no-git`）同步到各编辑器
 
 ## 1. 确认规则归属
 
@@ -71,4 +71,4 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 - 告知用户：加在了哪个文件的哪个章节
 - 如果涉及多个文件（如全局 + 项目都需要改），一次性说明
-- **提醒用户同步**：修改完成后，提醒用户运行 `sync-workflows.bat` 将变更同步到各编辑器
+- **提醒用户同步**：修改完成后，提醒用户运行 `sync-to-editors-only.bat` 将变更同步到各编辑器

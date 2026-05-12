@@ -13,8 +13,8 @@ sky-rules/
 │   ├── kl.*.md             # Kunlun 项目专用工作流
 │   └── more-tool.*.md      # 工具类工作流
 ├── sync-workflows.py       # 同步脚本（核心逻辑）
-├── commit-and-sync.bat     # 双击：git 提交 + 同步到编辑器
-├── sync-only.bat           # 双击：仅同步到编辑器（不提交）
+├── sync-to-editors-only.bat            # 双击：仅同步到编辑器，不执行 Git 操作
+├── commit-push-and-sync-to-editors.bat # 双击：Git 提交、推送并同步到编辑器
 └── README.md
 ```
 
@@ -37,8 +37,8 @@ sky-rules/
 
 | 操作 | 双击 | 终端命令 |
 |------|------|---------|
-| **git 提交 + 同步** | `commit-and-sync.bat` | `python sync-workflows.py` |
-| **仅同步（不提交）** | `sync-only.bat` | `python sync-workflows.py --no-git` |
+| **仅同步到编辑器，不执行 Git 操作（推荐）** | `sync-to-editors-only.bat` | `python sync-workflows.py --no-git` |
+| **Git 提交、推送并同步到编辑器** | `commit-push-and-sync-to-editors.bat` | `python sync-workflows.py` |
 
 **同步内容：**
 
@@ -53,15 +53,16 @@ sky-rules/
 - 使用 Python `shutil` 处理文件复制，兼容中文路径
 - 增量同步：比较修改时间，跳过未变更文件
 - 镜像模式：自动删除目标目录中源不存在的文件
-- 自动 git commit + push
+- `sync-to-editors-only.bat` 仅同步文件，不执行任何 Git 操作
+- `commit-push-and-sync-to-editors.bat` 会自动执行 git commit + push，再同步文件
 
 ## 维护说明
 
 > ⚠️ **核心原则：所有规则和工作流的修改，必须在 `sky-rules/` 仓库中进行，严禁直接修改编辑器目录下的文件。**
 > 编辑器目录中的文件是**同步产物**，直接修改会在下次同步时被覆盖丢失。
 
-- **修改规则** → 编辑 `rules/global-rules.md` → 双击 `sync-only.bat`（或 `commit-and-sync.bat`）
-- **修改工作流** → 编辑 `workflows/*.md` → 双击 `sync-only.bat`（或 `commit-and-sync.bat`）
+- **修改规则** → 编辑 `rules/global-rules.md` → 双击 `sync-to-editors-only.bat`
+- **修改工作流** → 编辑 `workflows/*.md` → 双击 `sync-to-editors-only.bat`
 - **版本控制**：通过 Git 管理变更历史，可追溯、可回滚
 - **多设备同步**：其他设备克隆仓库后运行同步脚本即可
 - **AI 优化规则**：让 AI 在 sky-rules 仓库中直接修改，修改后运行同步脚本
