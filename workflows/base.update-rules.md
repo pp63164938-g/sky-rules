@@ -23,10 +23,10 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 | 类型 | sky-rules 仓库中的源文件 | 同步目标 | 判断标准 |
 |------|---------------------------|---------|--------|
-| 全局规则（默认） | `rules/global-rules.md` | `~/.gemini/GEMINI.md` | 跨项目通用（TODO 规范、命名规范、Git 规范等） |
-| 全局工作流 | `workflows/base.*.md` | Windsurf + Antigravity | 跨项目通用的工作流程 |
-| 项目规则 | 项目根目录 `GEMINI.md` | — | 与特定项目相关（不经过 sky-rules） |
-| 项目工作流 | 项目根目录 `.agents/workflows/*.md` | — | 项目特有（不经过 sky-rules） |
+| 全局规则（默认） | `rules/global-rules.md` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 跨项目通用（TODO 规范、命名规范、Git 规范等） |
+| 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Agents/Codex Skills: `~/.agents/skills/*` | 跨项目通用的工作流程 |
+| 项目规则 | 项目根目录 `GEMINI.md` | 不经过 `sync-workflows.py` | 与特定项目相关 |
+| 项目工作流 | 项目根目录 `.agents/workflows/*.md` | 不经过 `sync-workflows.py` | 项目特有 |
 
 **不确定时先问用户**，不要自行判断。
 
@@ -71,4 +71,11 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 - 告知用户：加在了哪个文件的哪个章节
 - 如果涉及多个文件（如全局 + 项目都需要改），一次性说明
-- **提醒用户同步**：修改完成后，提醒用户运行 `sync-to-editors-only.bat` 将变更同步到各编辑器
+- **用户确认后的自动同步**：当用户在预览后回复“可以”、“确认”、“更新”、“执行”等明确同意语义时，必须完成实际写入，并立即执行：
+  `python D:/self/Ai/sky-rules/sync-workflows.py --no-git`
+- 同步命令必须使用 Git Bash 可直接执行的正斜杠路径格式，不要输出 Windows 反斜杠路径
+- **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
+  - 全局规则：同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
+  - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
+  - Skills：由 workflows 生成到 Agents/Codex `~/.agents/skills/`
+- 除非用户明确要求，否则不执行 `git add`、`git commit`、`git push`

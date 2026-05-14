@@ -37,6 +37,13 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        - 表单字段绑定的 `prop` 及 `v-model` 必须带 `form_` 开头（如 `form_TODO待联调_用户名`）；
        - 表格列的 `prop` 必须带 `table_` 开头（如 `table_TODO待联调_用户名`）；
        - **下拉列表接收变量名必须与所绑定的表单字段名完全一致并仅在末尾附加 `Options`**（例如：如果所绑定的字段为 `form_TODO待联调_状态`，则选项配置名必须严格声明为 `const [form_TODO待联调_状态Options]`，并以 `:options="form_TODO待联调_状态Options"` 的方式传入）。
+   - 🔴 **雷区 4 补充：下拉接口返回 `id/name` 时重复手写转换**
+     - ❌ 对接口返回的标准 `id/name` 下拉数据手写 `data.map(item => ({ label: item.name, value: item.id }))`。
+     - ✅ **正解：** 必须优先复用项目公共转换工具：
+       `import { getIdName2ValueLabelList } from '@/components/common/form/utils'`
+       并在 `useSimpleSelecter` 中使用：
+       `transform: data => getIdName2ValueLabelList(data ?? [])`
+     - ✅ 只有接口返回结构不是标准 `id/name`，或需要保留额外字段、特殊 value 规则时，才允许按业务显式转换，并在代码附近说明原因。
    - 🔴 **雷区 5：主观猜测导入路径**
      - ❌ 凭主观经验直接手写未确认的工具包或组件路径，例如 `import request from '@/utils/request'`，导致严重的类型与位置错误。
      - ✅ **正解：** 除非完全确定，否则必须使用工具去 `view_file` 或搜索本项目真实正在生效的其他代码中的正确文件引用形式，确保完全契合此项目的基建位置。

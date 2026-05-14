@@ -907,7 +907,31 @@ volta pin node@20
 **终端环境设定**：
 即使底层系统被识别为 Windows 并默认调用 PowerShell，在执行自动化终端命令（如 `run_command`）时，**必须将默认环境视为 Git Bash**。除了极简单且跨平台的通用命令（如 `npm run dev`），对于所有复杂操作（包含管道、重定向、环境变量传递、特定语法等），**强制统一使用 `bash -c "你的命令"` 进行包裹执行**，**严禁使用**任何原生 PowerShell 特有的指令或语法缩写。
 
+**对外输出命令的路径格式规范**：
+
+当给用户输出可复制执行的终端命令时，必须根据目标终端选择正确路径格式，避免 Windows 路径在 Git Bash 中被反斜杠转义。
+
+- 如果命令代码块标记为 `bash`，或上下文要求在 Git Bash / MINGW64 中执行：
+  - ❌ 禁止输出 Windows 反斜杠路径：`D:\self\Ai\sky-rules\sync-workflows.py`
+  - ✅ 必须输出 Git Bash 可执行路径：`D:/self/Ai/sky-rules/sync-workflows.py`
+  - ✅ 路径包含空格、中文或特殊字符时必须加双引号：`python "D:/self/Ai/sky-rules/sync-workflows.py" --no-git`
+
+- 如果命令代码块标记为 `powershell`，才允许使用 Windows 反斜杠路径：`D:\self\Ai\sky-rules\sync-workflows.py`
+
+**判断标准**：给用户的命令必须能在其当前终端中直接复制执行；不要把 PowerShell 路径格式放进 Bash 命令块。
+
 **核心原则**：禁止命令在编辑器中"假死"（显示 Running 但实际已完成或无响应）。
+
+**Vite 项目构建验证规范**：
+
+当当前项目可识别为 Vite 前端项目（如存在 `vite.config.*`，或 `package.json` scripts 中使用 `vite build`）时，日常页面开发、接口联调、Mock 替换、样式调整、规则同步等任务默认不执行 full build。
+
+- ❌ 禁止在用户未明确要求时自动执行：`npm run build`、`pnpm build`、`yarn build`、`vite build`
+- ✅ 优先使用轻量检查：`git diff --check`、目标文件搜索、局部类型/语法检查、已有轻量 lint 命令
+- ✅ 如果确实需要构建验证，必须先说明原因并征得用户确认
+- ✅ 仅在用户明确要求 build、排查构建失败、发布前验证、CI/部署相关任务时才执行 full build
+
+**判断标准**：Vite 的生产构建成本较高且容易产生额外产物；除非构建本身就是任务目标，否则不要把 build 当作默认验证步骤。
 
 **超时策略**：
 
