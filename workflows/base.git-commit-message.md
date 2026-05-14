@@ -183,3 +183,19 @@ description: 严格根据 git-commit-plugin 风格生成 commit 信息并提交�
 
 - 此工作流**不**执行任何 git 命令，仅生成 commit message 文本
 - 用户自行完成 `git add`、`git commit`、`git push`
+## 4. 明确提交/推送场景
+
+默认情况下，本工作流只生成 commit message，不执行 `git add`、`git commit`、`git push`。
+
+但当用户明确要求“提交”、“提交推送”、“commit”、“push”，且目标仓库已明确时，允许在完成 diff 核对后执行对应 git 写操作。
+
+### sky-rules 特例
+
+当用户要求对 `sky-rules` 提交推送时：
+
+- 工作目录必须切换到 `D:/self/Ai/sky-rules`
+- commit message 仍必须严格遵循本工作流的 `Emoji + Type + Scope + Subject` 格式
+- 只允许暂存 `rules/`、`workflows/`、`skills/`、同步脚本等与规则仓库相关的变更
+- 提交前必须输出将要提交的文件列表
+- 推送前必须确认当前分支与远端状态
+- 推送完成后必须输出 commit hash、分支和远端推送结果

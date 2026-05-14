@@ -78,4 +78,12 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
   - 全局规则：同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
   - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
   - Skills：由 workflows 生成到 Agents/Codex `~/.agents/skills/`
+- **同步后的提交确认**：规则写入、同步完成并输出同步结果后，必须询问用户是否需要提交并推送 `sky-rules` 仓库本次变更。
+- 如果用户确认提交/推送，则按 `base-git-commit-message` 的提交信息规范，对 `D:/self/Ai/sky-rules` 仓库生成 commit message，并执行：
+  1. `git status --short --branch`
+  2. `git diff --cached` / `git diff` 核对变更
+  3. 仅暂存本次规则相关源文件
+  4. `git commit`
+  5. `git push`
+- 如果用户未确认提交/推送，只完成规则写入和同步，不执行任何 git 写操作。
 - 除非用户明确要求，否则不执行 `git add`、`git commit`、`git push`

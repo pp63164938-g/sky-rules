@@ -44,6 +44,13 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        并在 `useSimpleSelecter` 中使用：
        `transform: data => getIdName2ValueLabelList(data ?? [])`
      - ✅ 只有接口返回结构不是标准 `id/name`，或需要保留额外字段、特殊 value 规则时，才允许按业务显式转换，并在代码附近说明原因。
+   - 🔴 **雷区 4 补充：下拉 Options 未显式声明类型**
+     - ❌ `com-form-select` 使用的 `options` 变量不声明类型，或 `useSimpleSelecter` 不传泛型，导致类型无法和 `com-form-select` 的 `options?: CommonEnum` 对齐。
+     - ✅ **远程下拉正解：** 使用 `useSimpleSelecter<CommonEnumItem>` 或明确的业务下拉项类型：
+       `const [form_状态Options] = useSimpleSelecter<CommonEnumItem>(...)`
+     - ✅ **静态下拉正解：** 使用 `CommonEnum` 显式标注：
+       `const form_状态Options: CommonEnum = [{ label: '启用', value: 1 }]`
+     - ✅ 若下拉项需要保留额外字段，必须定义清晰的扩展类型，并让 `useSimpleSelecter<xxx>` 与 `com-form-select` 的实际选项结构保持一致。
    - 🔴 **雷区 5：主观猜测导入路径**
      - ❌ 凭主观经验直接手写未确认的工具包或组件路径，例如 `import request from '@/utils/request'`，导致严重的类型与位置错误。
      - ✅ **正解：** 除非完全确定，否则必须使用工具去 `view_file` 或搜索本项目真实正在生效的其他代码中的正确文件引用形式，确保完全契合此项目的基建位置。
