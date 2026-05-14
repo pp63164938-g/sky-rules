@@ -27,7 +27,7 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **正解：** 全部内联，就在本 `index.vue` 里面的 `useTable` 方法声明内部去写 `[ { label: '...', prop: '...' } ]` 即可。 
    - 🔴 **雷区 2：剥离 `fn` 原生生态**
      - ❌ 把 `useTable` 原本自带并吐出的 `fn` 给丢弃，自己在 `<sky-table-pagination :fn="getTableData">` 里单独接管分页获取逻辑。
-     - ✅ **正解：** `<sky-table-pagination :fn="fn">`，并直接在 `useTable` 第二个参数 `{ fnApi: 你的API方法 }` 进行赋值。若暂无接口，用 `{ fnApi: () => Promise.resolve({ data: { records: [], total: 0 }}) as any }` 占位即可！
+     - ✅ **正解：** `<sky-table-pagination :fn="fn">`，并直接在 `useTable` 第二个参数 `{ fnApi: 你的API方法 }` 进行赋值。若只是占位接口且页面暂不需要可视化数据，可临时用 `{ fnApi: () => Promise.resolve({ data: { records: [], total: 0 }}) as any }` 占位；若进入静态开发并需要页面可预览，则必须按“雷区 8”在 API 层提供精简 Mock 数据。
    - 🔴 **雷区 3：复杂化搜索表单事件**
      - ❌ 自己实现 `@search="onSearch"` 并且还在方法里搞一堆 `removeEmpty(handleActiveFormParams(...))` 然后才更新刷新列表，并创建 `settingSearchFrom` 保存参数。
      - ✅ **正解：** 表单的触发就直接 `<sky-search-form-a @search="tableLoad(searchForm)" ...>` 结束战斗！如果有旁支获取聚合数据的操作，才自定义一个方法，并在内部纯粹地调用 `tableLoad(searchForm.value)` 和其余获取方法即可。
@@ -46,9 +46,12 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 🔴 **雷区 7：汇总组件（sky-summary）随意挂载与生命周期混乱**
      - ❌ 自行将汇总接口调用的动作放入 `onMounted`，或者随意用 `watch` 监听表格数据变化再去拉汇总，没有和表格的查询条件参数相互绑定。
      - ✅ **正解：** 如果需求指出需要数据汇总控制台，`src/components/dev-template/` 下的基础骨架中已被预留好了相关的 `<template #tool>` 插槽与对应的 `getSummaryData` 获取方法结构。**必须直接使用该解法**；并保证获取动作**必须且只能**被挂载接管于 `useTable` 的 `loadAfter: (params) => getSummaryData(params)` 钩子中触发，以确保每次列表发生查询变化时，自动联动刷新底部的汇总数据！
-   - 🔴 **雷区 8：静态开发期提供空数组作为 Mock 数据**
-     - ❌ 拿到空壳直接 `return Promise.resolve({ data: { records: [], total: 0 } })`
-     - ✅ **正解：** 在使用 `// @mock-start` 介入页面的静态开发且无真实后端数据支持时，**必须在 `records` 里面根据视图已设定的表格列，随机捏造 3-5 条贴合字段语义的数组实体对象**（即 Mock 列表数据不可为空）。这非常关键，它能够帮助大家在开发时就直观地检验表格列宽分配及各类状态（比如 el-tag / 时间解析）的渲染排版效果，防止联调后才发现样式崩溃。
+   - 🔴 **雷区 8：静态开发期 Mock 过度工程化**
+     - ❌ 在 API 文件里为临时 Mock 抽离一堆 `MOCK_*` 常量、字段映射、过滤函数、分页函数，甚至完整模拟后端查询逻辑。
+     - ❌ 在组件里内联 Mock 数据，或者为了临时展示改造 `useTable` / `fn` / 搜索事件链路。
+     - ✅ **正解：** 静态开发期无真实接口时，Mock 数据只放在 API 函数内部，用 `// @mock-start 联调时删除` 和 `// @mock-end` 包住；函数内直接返回 3-5 条贴合表格列语义的 `records`，`total` 直接写对应条数即可。
+     - ✅ **正解：** Mock 只负责撑起页面展示和列宽校验，不模拟复杂后端能力；不要额外实现筛选、分页、排序、字段映射等临时逻辑，除非用户明确要求。
+     - ✅ **正解：** `// @mock-end` 后保留被注释的正式 `request` 代码，保留真实入参变量，联调时只需删除 Mock 块并放开正式请求。
    - 🔴 **雷区 9：导出按钮（com-download）未走下载中心模式**
      - ❌ 自行手写原生下载逻辑，或在无特殊理由的情况下直接使用 `getOther` 模式。
      - ✅ **正解：** 导出功能**必须优先使用 `com-download` 组件的下载中心模式**，按以下优先级选用：
