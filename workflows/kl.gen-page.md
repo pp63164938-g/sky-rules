@@ -87,15 +87,62 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        // <sky-search-form-a v-bind="searchAProps" ...>
        // <sky-table-pagination v-bind="fieldTableProps" ...>
        ```
+   - 🔴 **雷区 10 补充：组件 Props 无依据增删**
+     - ❌ 看到组件支持某个 prop，就为了“保险”自行追加或覆盖组件默认行为，例如需求和 `list-a.vue` 模板都没有要求时，擅自给表格加 `:dblclick-detail="false"`。
+     - ❌ 反过来也不能机械照抄所有模板 props：如果需求明确不需要复选框、批量选择等能力，就不要无脑保留 `show-select`、`primary-key` 等选择相关配置。
+     - ✅ **正解：** 组件 Props 必须按“模板基础结构 + 当前需求必要性”取舍：模板里已有且符合当前页面的保留；需求明确需要的补充；需求不需要或没有依据的不要加。
+     - ✅ **正解：** 如果某个组件默认行为看起来可能影响业务，但需求没有明确要求修改，必须先询问确认，不能自行通过传 `false`、空值或额外参数去覆盖默认行为。
+     - ✅ 示例：需要批量操作或多选时，可以按需求使用 `show-select` 和 `primary-key`；没有多选需求时不要主动添加。需要禁用双击详情时，必须由需求明确提出后再配置 `:dblclick-detail="false"`。
+   - 🔴 **雷区 10 补充：弹窗结构不按模板**
+     - ❌ 只要是弹窗，不允许直接把 `<sky-dialog>` / `<el-dialog>` 及其表单逻辑写在列表页 `index.vue` 中。
+     - ✅ **正解：** 标准列表页的业务弹窗必须放在当前页面同级 `dialog/` 目录下，例如 `./dialog/dialog-update.vue`。
+     - ✅ 列表页只保留打开弹窗的入口函数，通过 `createDefaultComponent` 动态加载弹窗组件。
+     - ✅ 新增弹窗必须使用以下调用结构：
+       ```ts
+       function handleAdd() {
+           import('./dialog/dialog-update.vue').then(async component => {
+               createDefaultComponent(component.default, {
+                   type: 'add',
+                   onSubmit: () => tableLoad()
+               })
+           })
+       }
+       ```
+     - ✅ 编辑弹窗必须使用同类调用结构：
+       ```ts
+       function handleEdit(row: Omix) {
+           import('./dialog/dialog-update.vue').then(async component => {
+               createDefaultComponent(component.default, {
+                   type: 'edit',
+                   id: row.id,
+                   row,
+                   onSubmit: () => tableLoad()
+               })
+           })
+       }
+       ```
+     - ✅ 弹窗内部结构、状态命名、loading 拆分、`dialogValue`、`formData`、`formRules`、`handleConfirm`、`emit('submit')`、`sky-dialog` / `el-scrollbar` / `sky-form` / `common-grid-form` 等细节，必须以 `src/components/dev-template/dialog/dialog-update.vue` 为唯一模板来源。
+     - ✅ 生成弹窗前必须先读取 `src/components/dev-template/dialog/dialog-update.vue`，按其现有结构解析复用；除非需求明确要求，不要自行改成 `el-form`、自定义 footer、内联 loading、或其他弹窗骨架。
+     - ✅ 弹窗组件内部负责表单回显、校验、提交接口、成功提示和关闭逻辑；列表页只负责打开弹窗和提交成功后的 `tableLoad()` 或按需求无刷更新当前行。
    - 🔴 **雷区 11：遗漏路由配置**
      - ❌ 新建页面后，认为视图代码写完即完成任务，没有去检查和配置路由，导致页面无法在系统中实际访问。
      - ✅ **正解：** 新建全新页面后，**必须**主动搜索并更新 `src/router/` 目录下对应业务模块的路由配置文件（例如 `oc-routes.ts`、`crm-routes.ts` 等），添加正确的 `path`、`name` 和 `component` 映射，确保页面可被正确路由加载。
    - 🔴 **雷区 12：遗漏 API 的全局异常提示配置**
      - ❌ 在定义 API 时，不加 `message` 参数，导致接口报错时没有全局的错误拦截提示；或者在每个接口里硬编码写死 `message: true`，导致后期无法统一调整。
      - ✅ **正解：** 在定义所有可能需要报错强提醒的 API（包括查询、操作等）时，**必须**参考 CRM 模块的规范，在 API 文件的头部统一声明 `const message = true // 默认开启异常提醒`，然后在 `request` 配置中传入简写的 `message`。由统一拦截器自动接管并抛出业务异常提示。至于成功提示（`ElMessage.success`），仍然由业务方在 `try` 块内按需手动抛出。
+   - 🔴 **雷区 12 补充：API 文件归属过细**
+     - ❌ 新增一个页面就默认新建一个 API 文件，例如为了单个“展会邀约对象”页面单独创建 `exhibition-invite-object.ts`，导致 `src/api/xxx/` 下文件越来越碎。
+     - ✅ **正解：** 新增接口前必须先查看当前业务模块已有 API 文件，按业务域归属复用已有文件。例如页面属于“活动&推广管理”，且已存在 `src/api/csc/marketing-activities.ts`，则接口应优先追加到该文件中。
+     - ✅ 只有当接口属于全新的独立业务域、预计会承载多个页面/一组完整能力，或用户明确要求拆分时，才允许新建 API 文件。
+     - ✅ 如果没有充分依据新建 API 文件，也不要在 `src/api/xxx/index.ts` 中新增独立导出命名空间；应沿用既有模块导出，例如 `API.marketingActivities.xxx`。
    - 🔴 **雷区 13：操作按钮位置不规范（含导出等特殊按钮）**
      - ❌ 在未明确要求的情况下，将“编辑”、“删除”等操作按钮放在表格最右侧的“操作列”中；或在毫无依据的情况下，擅自使用 `<template #right>` 将导出按钮强行挤到表格右上角。
      - ✅ **正解：** 所有操作的按钮（包括新增、批量操作、针对单条数据的“编辑”，以及 **导出等特殊按钮**），**默认必须全都在表格的左上角**！即直接放置在 `<com-header-between table>` 的默认插槽中（无需区分 `#left` 和 `#right`）。**除非用户或需求明确指明需要放在右侧，否则严禁自作主张使用 `<template #right>` 破坏左侧对齐阵型。**
+   - 🔴 **雷区 13 补充：无操作按钮时擅自添加页面标题**
+     - ❌ 在 `list-a.vue` 类型页面中，如果表格头部没有操作按钮、导出、批量操作等实际功能，禁止为了显示标题而额外添加：
+       `<template #header><com-header-between table><com-page-title /></com-header-between></template>`
+     - ✅ **正解：** `list-a.vue` 的 `#header` 只用于承载表格左上角操作按钮、导出等功能节点；没有操作节点时不要声明 `#header` 插槽。
+     - ✅ `com-page-title` 仅在模板本身存在对应结构或需求明确要求时使用，禁止从 `list-b.vue` 等其他模板迁移到 `list-a.vue`。
    - 🔴 **雷区 14：Tab 子页面使用了错误的容器组件**
      - ❌ 在开发 Tab 内嵌的子页面时（如 `tabs/tab-xxx.vue`），习惯性地复制了独立页面的 `<com-page-scroll-wrapper>` 和 `<com-page-wrapper-item>`，导致 Tab 切换时高度计算错误或滚动条异常。
      - ✅ **正解：** **但凡是挂载在 Tab 下的子页面**，必须且只能使用 `<com-page-tab-item-wrapper>` 作为根容器！同时必须通过 `<template #="{ hFullClass }">` 解构出高度类名，并绑定给内部的 `<sky-table-pagination :class="hFullClass">`，让表格自动撑满剩余高度。严格参照 `src/components/dev-template/tab-template/tabs/tab-list-a.vue`。
