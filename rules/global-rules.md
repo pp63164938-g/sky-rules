@@ -78,6 +78,16 @@ alwaysApply: true
 - 改变老代码的格式排版（如单行写法改多行、多行改单行，保持原格式不动）
 - 在替换代码时误删周围不相关的老代码（替换范围必须精确，只动目标代码，不波及上下文的已有逻辑）
 
+**维护旧判断的最小侵入原则**：维护已有功能时，默认保持老代码原有判断语义、分支关系和默认行为。新增逻辑应优先以前置拦截、独立函数或独立分支实现；只有在不改变旧分支含义和执行结果的前提下，才允许为减少重复收尾逻辑而调整判断结构。
+
+- 新增高优先级逻辑时，优先在老判断前增加独立分支，避免改动老判断内部逻辑
+- 禁止为了新增逻辑改变老判断的业务含义、默认分支、触发条件或执行顺序
+- 允许在不改变旧逻辑结果的前提下，将判断整理为 `if / else if / else`，用于共享统一收尾逻辑或避免重复副作用
+- 禁止把两个独立业务弹窗、路由动作或状态判断耦合到同一个旧函数里
+- 简单的新跳转参数、一次性带入数据等轻量扩展，可以复用已有函数并通过可选参数实现，但必须保证老调用的入参、返回数据和行为完全不变
+- 新弹窗、新业务动作如果会改变旧函数职责、引入业务分支耦合或让旧函数语义变模糊，应新增独立函数，老函数保持原语义不变
+- 修改完成后必须回看 diff，确认旧判断的业务结果没有变化，只是被新增逻辑前置拦截或共享收尾
+
 **替换功能的正确做法**：
 
 - **新增功能**：在老代码旁边新增，不动老代码
@@ -134,15 +144,160 @@ alwaysApply: true
 - 只有 `.vscode` 自动格式化配置时，不能视为已格式化完成。
 - 没有明确工具时，必须暂停确认，不能按个人习惯生成新格式化配置。
 - 最终回复必须说明是否已执行格式化，以及使用了哪个命令。
-# 业务组件与二次封装组件使用规范
 
-**核心原则**：严禁将项目内的二次封装组件（如 `com-*` / `sky-*` / `business-*` 等）完全等同于原生底层基础组件（如 Element/AntD）靠自行猜测去编写配置。
+# 组件 / 函数 / Hook 使用前查证规范
 
-**行为准则**：
+**核心原则**：使用任何非当前文件内定义的组件、函数、Hook、工具方法时，禁止按原生组件、个人经验或其他页面用法盲目推断。必须先查源码、类型定义、文档或项目已有用法，并以源码/类型定义为最终依据，确认可用参数、合法值、默认值、返回值和副作用后再编写配置。
 
-1. **使用前强制看源码/文档**：在首次调用不熟悉的业务封装组件，或准备传入复杂的、未曾见过的 `Props` 参数之前，**必须先使用工具去读取该组件的源码文件（或相关文档）**，明确其接口定义（`Props`、`Emits`）及内置默认特性。
-2. **利用最佳实践糖**：很多二次封装组件自身已经对常见场景做了高度定制（如原生传递 `multiple` 便自动帮你配置折叠 tags）。严防因为不看源码而写出覆盖或破坏其自身特性的冗余代码。
+**适用范围**：
 
+- 项目二次封装组件：`com-*` / `sky-*` / `business-*` 等
+- 项目业务组件：页面内弹窗、抽屉、选择器、表格、表单项等
+- 项目 Hooks / Composables：如 `useTable`、`useForm`、`useSimpleSelecter`
+- 工具函数 / 业务函数：格式化、枚举转换、请求封装、表单工具等
+- UI 库组件在当前项目中的封装用法
+
+**使用前必须确认**：
+
+1. **参数 / Props 定义**：是否真的支持该配置，类型是什么
+2. **可用值范围**：枚举、模式、布尔开关、数字阈值分别允许哪些值
+3. **默认值**：是否已经内置默认值，避免重复传入默认配置
+4. **返回值结构**：数组解构、对象字段、回调参数分别是什么
+5. **副作用和触发时机**：是否会自动请求、自动校验、自动清空、自动回填
+6. **项目已有用法**：只能作为线索，不能替代源码/类型定义确认
+
+**禁止行为**：
+
+- 禁止只参考其他页面就照抄参数，不回到函数/组件定义确认
+- 禁止重复传入函数或组件已经默认处理的参数
+- 禁止未确认合法值就自行填写枚举值、模式名、数字阈值
+- 禁止为了“看起来完整”补一堆默认配置
+- 禁止查不到定义时继续靠猜测写代码
+
+**代码示例**：
+
+```ts
+// ❌ 禁止 - 未查看 useSimpleSelecter 默认值，重复传入默认配置
+useSimpleSelecter(request, {
+    least: 1,
+    immediate: false
+})
+
+// ✅ 正确 - 查看源码确认 least 默认就是 1，只保留真正改变默认行为的配置
+useSimpleSelecter(request, {
+    immediate: false
+})
+```
+
+**判断标准**：
+
+- 首次使用组件、函数、Hook，或首次传入不熟悉参数时，必须先查源码/类型/文档
+- 已有默认值时，不重复传入同等默认配置
+- 其他页面用法只能帮助定位，不能作为最终依据
+- 查不到定义、默认值或可用值时，必须暂停确认，不能靠推断继续写
+
+# 通用组件业务边界规范
+
+**核心原则**：通用/基础组件只承载跨场景稳定能力，禁止内置具体页面、接口或业务状态的判断和样式。页面业务差异应通过 `props`、`slots`、`class` 回调等扩展点由调用方传入，并在业务页面或业务组件中维护。
+
+**禁止行为**：
+
+- 禁止在通用组件内直接判断页面业务字段，如 `sendRelationRuleStatus`、`approvalStatus`、`businessType`
+- 禁止在通用组件样式中写单一页面业务类，如 `.email-input-tag--send-relation-conflict`
+- 禁止为了某个页面需求修改通用组件默认表现，导致其他调用方被动受影响
+- 禁止把接口返回的业务语义字段加入通用组件基础类型，导致基础组件依赖业务模型
+
+**正确做法**：
+
+- 通用组件只新增稳定扩展点，如 `tagClass`、`optionClass`、`prefix/suffix slot`、`renderLabel`
+- 业务状态判断、业务 class 生成、业务样式放在页面组件或页面专属业务组件中
+- 如果多个业务模块复用同一业务态，再抽到对应业务目录组件，不直接上升到基础组件
+- 新增扩展点前先确认已有 `props/slots` 是否能满足，避免重复能力
+
+**代码示例**：
+
+```vue
+<!-- ❌ 错误：通用邮箱标签组件内写收发件规则业务样式 -->
+<email-input-tag class="email-input-tag--send-relation-conflict" />
+
+<!-- ✅ 正确：基础组件提供扩展点，业务页面决定业务 class -->
+<email-input :tag-class="getSendRelationTagClass" />
+```
+
+```ts
+/** 获取收发件规则邮箱标签业务样式 */
+function getSendRelationTagClass(emailItem) {
+    return {
+        'email-input-tag--send-relation-conflict': emailItem.sendRelationRuleStatus === 'conflict'
+    }
+}
+```
+
+# TypeScript 类型问题处理规范
+
+**核心原则**：类型报错必须优先回到真实数据结构、函数签名、组件泛型和业务边界上解决，禁止为了“让 TS 不报错”而新增无业务语义的包装函数、运行时判型、类型断言或兜底转换。
+
+**禁止行为**：
+
+- 禁止为了适配类型而新增没有业务语义的函数，例如只把 `name?: string` 包装成 `name: string` 再传给工具函数
+- 禁止用 `as any`、`as unknown as Xxx`、无依据的 `as Xxx` 掩盖真实类型不匹配
+- 禁止为了绕过类型错误新增运行时判型函数，但该判型不服务真实业务逻辑
+- 禁止把页面业务字段加入通用基础类型，只为让某个页面的类型通过
+- 禁止用默认值、空字符串、空数组等方式强行满足类型，却改变业务含义
+
+**正确做法**：
+
+- 如果运行时本来允许字段为空，应修改源头类型，例如 `name: string` 改为 `name?: string`
+- 如果组件支持扩展字段，应通过泛型、扩展类型、`Omix` 或稳定扩展点表达，而不是写页面专属断言
+- 如果函数返回值被推断得过窄或过宽，应显式声明返回类型，而不是新增中间函数
+- 如果类型暴露出业务状态建模不清晰，应先调整状态模型，例如用 `undefined` 表示“无状态”，不要新增 `default` 枚举再到处排除
+- 如果确实需要类型断言，必须能说明外部系统、组件契约或前置校验已经保证该类型成立
+
+**代码示例**：
+
+```typescript
+// ❌ 禁止 - 只是为了满足 name 必填而新增包装函数
+function getTagUserString(emailItem: TagItem) {
+    return getUserString({
+        email: emailItem.email,
+        name: emailItem.name ?? ''
+    })
+}
+
+// ✅ 正确 - getUserString 运行时本来支持无 name，应该修正源头类型
+export type UserInfo = {
+    email: string
+    name?: string
+}
+
+const text = getUserString(emailItem)
+```
+
+```typescript
+// ❌ 禁止 - 为了解决 class 回调类型，新增没有业务必要的判型和断言
+function getTagClass(item: TagItem) {
+    if (!isBusinessItem(item)) return {}
+
+    const businessItem = item as BusinessItem
+    return {
+        'tag--active': businessItem.status === 'active'
+    }
+}
+
+// ✅ 正确 - 字段本身是可选扩展信息，直接声明返回类型，让无值自然为 false
+function getTagClass(item: TagItem): TagClassValue {
+    return {
+        'tag--active': item.status === 'active'
+    }
+}
+```
+
+**判断标准**：
+
+- 这个改动是否只服务 TS 通过，而没有业务意义；如果是，应回到类型源头修
+- 新增的函数、判型、断言是否让调用方更理解业务；如果没有，不应新增
+- 类型定义是否和运行时真实数据一致；不一致时优先修类型，不靠兜底绕过
+- 通用类型是否被页面业务污染；如果是，应改为扩展点或业务侧扩展类型
 # CSS/SCSS 样式规范
 
 **核心原则**：
@@ -266,9 +421,30 @@ this.$router.push({ name: "search", query: { keyword: "test" } });
 
 # 枚举映射规范
 
-**核心原则**：只要涉及枚举值映射（无论数量多少），**禁止使用三元运算符**，必须使用映射对象。即便当前只有 1-2 个值，考虑到未来扩展性，也应强制使用 Map。
+**核心原则**：枚举展示和枚举判断必须避免三元表达式、散落硬编码和重复数据源。优先判断当前模块是否已经存在下拉 Options；有下拉时复用下拉数据源，没有下拉时再使用映射对象（Map/Object）作为唯一数据源。
 
-**代码示例**：
+**有下拉 Options 的展示场景**：当枚举值已经以 `CommonEnum` / `xxxOptions` 形式存在时，展示 label 必须优先复用该 options 数据源，禁止为了展示再维护一份内容完全相同的映射对象。
+
+```javascript
+// ❌ 禁止 - options 和 map 内容重复维护
+const businessTypeOptions = [
+  { label: "供应商", value: 1 },
+  { label: "客户", value: 2 },
+];
+
+const BUSINESS_TYPE_LABEL_MAP = {
+  1: "供应商",
+  2: "客户",
+};
+
+// ✅ 推荐 - 直接复用已有下拉 options
+const businessTypeLabel = getListOptionLabel(businessType, businessTypeOptions);
+
+// ✅ 可选 - 特殊场景直接查找 options
+const businessTypeLabel = businessTypeOptions.find(businessTypeOption => businessTypeOption.value === businessType)?.label ?? "未知";
+```
+
+**无下拉 Options 的展示场景**：当当前模块没有现成下拉 options，或该映射本身就是稳定业务常量时，使用映射对象统一维护 value → label。
 
 ```javascript
 // ❌ 禁止 - 三元嵌套超过2个
@@ -281,9 +457,6 @@ const statusText =
         ? "已拒绝"
         : "未知";
 
-// ❌ 禁止 - 即使只有2个值也不允许三元（新增类型时需全局搜索替换）
-const productLabel = productType === 1 ? "短信/语音" : "PWA";
-
 // ✅ 推荐 - 使用映射对象
 const STATUS_MAP = {
   1: "待审核",
@@ -292,7 +465,7 @@ const STATUS_MAP = {
 };
 const statusText = STATUS_MAP[status] || "未知";
 
-// ✅ 推荐 - 类型→标签映射
+// ✅ 推荐 - 无现成 productTypeOptions 时，使用类型→标签映射
 const PRODUCT_LABEL_MAP = {
   1: "短信/语音",
   2: "PWA",
@@ -313,11 +486,54 @@ const SMS_VOICE_PRODUCT_TYPES = [1, 3, 4]
 v-if="SMS_VOICE_PRODUCT_TYPES.includes(rule.productType)"
 ```
 
+**三元表达式使用限制**：
+
+- 只有永远不会扩展的纯布尔正反场景，才允许使用三元表达式，例如是否显示“是/否”、是否加一个简单占位文案
+- 只要判断对象是状态、类型、模式、错误码、业务枚举、接口返回标识，禁止使用三元表达式，必须使用映射对象、明确分支或常量集合
+- 只要后续可能新增第三种状态，禁止使用三元表达式，即使当前只有两个值
+- 不确定是否会扩展时，默认按会扩展处理，禁止使用三元表达式
+- 三元表达式不能承载业务状态命名转换，例如把 `configured/conflict` 转成 `primary/danger`，业务状态和样式状态必须分层处理
 **判断标准**：
 
-- **枚举映射/多状态判断**：禁止使用三元运算符，必须使用映射对象（Map/Object）
+- **有下拉 Options 的枚举展示**：禁止重复维护 Map/Object，必须优先复用 `getListOptionLabel(value, xxxOptions)` 或 `xxxOptions.find(...)`
+- **无下拉 Options 的枚举展示**：禁止使用三元运算符，必须使用映射对象（Map/Object）统一维护
+- **多状态判断**：禁止使用三元运算符，必须使用映射对象或明确分支
 - **多类型共享逻辑**：禁止硬编码单值判断，必须提取常量集合 + `includes`
-- **真假二元判断 (Boolean)**：仅简单的 Yes/No 场景允许使用三元运算符
+- **真假二元判断 (Boolean)**：仅简单、确定永远不扩展的 Yes/No 场景允许使用三元运算符；不确定时禁止使用
+
+## 枚举条件分支判断规范
+
+**核心原则**：当条件字段是枚举类型时，必须显式判断每个已知枚举值，禁止只判断其中一个值，再把剩余情况默认当作另一个枚举值处理，除非该默认分支确实是业务兜底并写明原因。
+
+```javascript
+// ❌ 禁止 - 只判断供应商，剩余情况默认当作客户
+if (targetType === TARGET_TYPE_SUPPLIER) {
+    return getSupplierStaffOptions()
+}
+
+return getCustomerStaffOptions()
+
+// ✅ 正确 - 客户、供应商都显式判断，未知类型单独处理
+if (targetType === TARGET_TYPE_SUPPLIER) {
+    // 供应商业务员来自 SRM，按供应商编码集合查询
+    return getSupplierStaffOptions()
+}
+
+if (targetType === TARGET_TYPE_CUSTOMER) {
+    // 客户业务员来自 CRM，按品牌和客户编码集合查询
+    return getCustomerStaffOptions()
+}
+
+// 未识别的邀约对象类型，避免未来新增类型时误走客户逻辑
+return []
+```
+
+**判断标准**：
+
+- 枚举值有明确含义时，每个已知值都要显式判断。
+- 禁止用“非 A 即 B”的写法处理业务枚举。
+- 默认分支只能用于真正的未知/兜底场景，并且必须有过程注释说明原因。
+- 未来新增枚举值时，应新增独立分支，而不是复用旧默认逻辑。
 
 # 条件分支编写规范
 
@@ -358,6 +574,175 @@ function getFilteredItems(type, items) {
 - 默认行为放在函数/回调末尾作为最终 `return`
 - 新增场景时只需在末尾 `return` 前插入新的 `if` 块，无需修改已有分支
 
+## 明确分支优先规范
+
+**核心原则**：当业务条件可以明确判断时，必须显式写出对应分支，禁止为了省代码量用默认分支吞掉其他可明确判断的场景。兜底分支只用于未知、异常、兼容历史脏数据等确实无法提前枚举的情况。
+
+```javascript
+// ❌ 禁止 - 只写一个明确分支，其余全部默认处理
+if (targetType === TARGET_TYPE_SUPPLIER) {
+    return getSupplierOptions()
+}
+
+return getCustomerOptions()
+
+// ✅ 正确 - 能明确的分支逐个写清楚
+if (targetType === TARGET_TYPE_SUPPLIER) {
+    return getSupplierOptions()
+}
+
+if (targetType === TARGET_TYPE_CUSTOMER) {
+    return getCustomerOptions()
+}
+
+// 未知类型才走兜底，避免后续新增类型时误走客户逻辑
+return []
+```
+
+**判断标准**：
+
+- 能通过枚举、状态码、类型字段明确判断的分支，必须显式判断。
+- 禁止把“剩余情况”默认等同于某个具体业务类型。
+- 兜底分支必须表达未知/异常/兼容场景，并在代码附近写明原因。
+- 后续拓展新类型时，应新增独立分支，而不是复用旧兜底逻辑。
+
+## 兜底值使用规范
+
+**核心原则**：兜底值必须有明确业务目的，禁止为了消除报错、让页面看起来正常、让校验通过而随手使用 `??`、`||` 或默认枚举值。兜底不能掩盖接口缺字段、历史脏数据或业务状态异常。
+
+**使用兜底前必须先判断目的**：
+
+1. **新增初始化**：允许使用明确业务默认值，例如新增表单默认选中第一个类型
+2. **纯展示占位**：允许使用 `value ?? '-'`、`list ?? []` 等不影响提交和业务判断的占位
+3. **可选字段默认**：允许对非必填、非关键字段做空值兜底，例如 `remark ?? ''`
+4. **历史脏数据兼容**：必须写明兼容原因，并通过提示、禁用提交、异常状态或上报让问题可感知
+5. **必填字段 / 枚举 / ID / 金额 / 状态 / 提交参数**：禁止静默兜底，必须校验缺失并显式处理异常
+
+**禁止行为**：
+
+- 禁止在编辑详情回显时，把接口缺失的必填枚举默认成第一个选项
+- 禁止接口字段缺失时用本地默认值继续提交，导致错误数据被保存
+- 禁止用兜底让表单校验“看起来通过”
+- 禁止用 `||` 兜底可能为 `0`、`false`、空字符串的有效业务值
+
+**代码示例**：
+
+```typescript
+// ✅ 允许 - 新增表单初始化，业务明确默认供应商
+const formData = {
+    businessType: businessTypeOptions[0].value
+}
+
+// ❌ 禁止 - 编辑回显缺少类型时静默兜底为供应商，会掩盖接口异常
+formData.value = {
+    businessType: data.businessType ?? businessTypeOptions[0].value
+}
+
+// ✅ 正确 - 编辑回显必填枚举缺失时显式暴露问题，避免错误提交
+if (data.businessType == null) {
+    ElMessage.error('详情缺少类型，无法编辑')
+    return
+}
+
+formData.value = {
+    businessType: data.businessType
+}
+```
+
+**判断标准**：
+
+- 兜底后是否会影响保存、查询参数、接口参数或业务分支；会影响则不能静默兜底
+- 兜底值是否只是展示占位；只是展示占位才允许简单兜底
+- 兜底是否会让接口缺字段、脏数据、异常状态看起来正常；会掩盖问题则禁止
+- 必填字段缺失时必须显式报错或阻断流程，不能用默认值绕过
+
+# 函数抽象边界规范
+
+**核心原则**：禁止为了“看起来结构化”而把简单表达式、单行字符串拼接、单次使用且无业务语义的逻辑强行抽成函数。函数抽象必须带来明确收益：复用、隔离复杂逻辑、表达稳定业务概念、封装外部差异或降低主流程认知成本。
+
+**禁止行为**：
+
+- 单行表达式只使用一次，却额外抽函数
+- 函数名只是重复代码行为，没有提供新的业务语义
+- 为简单字符串拼接、简单取值、简单布尔判断单独建函数
+- 抽函数后调用处仍然需要回看函数实现才能理解真实逻辑
+- 为了添加函数注释而制造没有必要的函数
+
+**代码示例**：
+
+```javascript
+// ❌ 禁止 - 单次使用的简单拼接，不需要函数
+function getInviteObjectKey(objectCode, objectCodeIndex) {
+    return `${objectCode}_${objectCodeIndex}`
+}
+
+const row = {
+    inviteObjectKey: getInviteObjectKey(objectCodeItem, objectCodeIndex)
+}
+
+// ✅ 正确 - 直接内联，调用处更清晰
+const row = {
+    inviteObjectKey: `${objectCodeItem}_${objectCodeIndex}`
+}
+```
+
+```javascript
+// ✅ 可以抽函数 - 存在稳定业务语义或复杂兼容逻辑
+function getStaffGroupOptions(staffGroupItem) {
+    const staffOptions =
+        staffGroupItem.staffOptions ??
+        staffGroupItem.staffList ??
+        staffGroupItem.staffOptionList
+
+    if (Array.isArray(staffOptions)) return staffOptions
+
+    return []
+}
+```
+
+**判断标准**：
+
+- 只用一次、只有一行、没有业务命名价值 → 不抽函数
+- 能直接看懂的简单表达式 → 优先内联
+- 有复用、有复杂分支、有接口差异、有稳定业务概念 → 可以抽函数
+- 抽函数后必须让主流程更清晰，而不是增加跳转成本
+# Vue 响应式派生数据使用规范
+
+**核心原则**：`computed` 只用于真正需要响应式缓存、模板自动更新或多处响应式消费的派生数据；不要把一次性计算、事件处理内的临时转换、带参数转换逻辑都写成 `computed`。
+
+**禁止行为**：
+
+- 点击按钮、提交表单、预览生成等一次性流程中，只为了取一次值而定义 `computed`
+- 参数化转换逻辑写成 `computed`，再通过外部响应式变量间接驱动
+- 仅为了“统一取值”把简单解析、拆分、过滤逻辑放进 `computed`
+- 在 `computed` 内做接口请求、状态写入、消息提示等副作用
+
+**代码示例**：
+
+```javascript
+// ❌ 不推荐 - 点击生成时才需要编码，却长期维护 computed 依赖
+const inviteObjectCodes = computed(() => formData.value.objectCodes.split(/[，,\n]+/).filter(Boolean))
+
+async function handleGenerate() {
+    const objectCodes = inviteObjectCodes.value
+}
+
+// ✅ 推荐 - 一次性流程中按需执行函数，输入输出更明确
+function getInviteObjectCodes() {
+    return formData.value.objectCodes.split(/[，,\n]+/).filter(Boolean)
+}
+
+async function handleGenerate() {
+    const objectCodes = getInviteObjectCodes()
+}
+```
+
+**判断标准**：
+
+- 模板直接展示、禁用状态、列表渲染依赖，并且需要随响应式数据自动变化 → 可以用 `computed`
+- 只在某个函数执行时使用一次，例如点击“生成邀约信息”时解析编码 → 用普通函数或函数内局部变量
+- 需要传参、需要明确输入输出的数据转换 → 用普通函数
+- 逻辑本身不是响应式消费点，就不要为了“方便拿值”引入 `computed`
 # 变量命名规范
 
 **核心原则**：在循环迭代（如 `map`、`forEach`、`find`）或复杂的业务逻辑方法中，**禁止使用含义不明的单字符变量名**（如 `s`、`t`、`i`、`item` 等）。必须使用完整、具有语义化的单词进行命名。
@@ -650,7 +1035,37 @@ async fetchGiftAmount() {
 - **过程注释 / 行内注释**：说明关键判断、特殊分支、兜底逻辑的业务原因，即“为什么这样做”。
 - **禁止规则漂移**：不要在函数顶部写一大段具体业务规则，而实际判断只留一行代码；规则变化时这类注释最容易过期。
 - **注释紧贴代码**：如果注释解释的是某个 `if`、`return`、`v-if`、兜底值或特殊状态，注释必须放在该代码附近。
+- **函数注释不替代过程注释**：函数名或 JSDoc 只说明函数用途；当函数内部存在关键条件分支、接口选择、跨系统调用、数据组装、兜底返回等逻辑时，必须在对应代码附近添加过程注释，说明该分支为什么这样处理。
+- **过程注释必须贴近判断**：不要只在函数顶部写“获取业务员下拉”之类的总说明，而让内部 `if`、`return []`、接口选择逻辑没有任何解释。
+- **if 分支说明写在 if 上方**：当注释解释的是某个 `if` 分支代表的业务场景、接口来源、枚举含义或进入该分支的原因时，注释应紧贴写在 `if` 语句上一行，而不是写在 `{}` 内第一行。
+- **分支注释应写明对应值**：当分支条件依赖枚举、状态码、类型字段时，注释中应同时写明业务含义和具体值，例如 `// 邀约对象 = 供应商（targetType = 1），业务员来自 SRM 批量接口`，避免只写“供应商业务员来自 SRM”。
+- **分支内部步骤写在分支内部**：当注释解释的是进入分支后的某个具体操作、转换、兜底或副作用时，注释应写在分支内部对应代码附近。
+- **内联判断必须说明关键分支含义**：当三元表达式、布尔表达式或内联条件同时承担业务判断和兜底含义时，必须在表达式附近写明每个关键分支的业务含义，尤其要说明 `undefined`、空数组、空字符串、`false` 等值代表“无规则 / 不限制 / 异常 / 兼容”等哪一种场景，禁止只靠表达式让读者猜。
+- **复杂数据结构变量必须说明功能、结构和关键含义**：当变量承载 Map/Record/缓存/索引表/分组结果/多状态集合等复杂结构，或会被多个步骤复用时，必须在声明处使用 JSDoc 写明业务用途、数据结构和关键值含义。数据结构应说明 key/value 代表什么，例如 `{ 收件/抄送邮箱: 允许发件邮箱交集 }`；关键值含义仅在存在空值、空数组、枚举值、特殊状态时补充，例如 `undefined = 无规则`、`[] = 有规则但无共同可用数据`。如果只是一次性局部临时变量，保持简洁即可，避免机械注释。
+- **复杂函数注释必须说明关键入参和返回含义**：当函数包含布尔开关、枚举参数、可选参数、联合返回值，或 `undefined/null/[]` 等具有业务含义的返回值，并会影响 UI 状态、提交拦截、缓存写入等关键流程时，必须在函数 JSDoc 中说明关键入参含义和返回值含义。不要机械给所有简单函数补 `@param/@returns`；只有参数或返回值脱离实现过程不易理解时才补充。
+- **转换类注释必须写明输入输出**：当函数、computed、map/reduce 等逻辑用于数据结构转换时，注释必须说明“由什么结构转换成什么结构”，必要时补充业务用途，禁止只写“转换数据”“格式化列表”这类空泛描述。
 
+**转换类注释示例**：
+
+```javascript
+// ❌ 不推荐 - 只说转换，看不出输入输出
+/** 转换批量业务员分组 */
+function getBatchStaffGroupList(batchStaffOptions) {
+    return Object.entries(batchStaffOptions).map(([objectCode, staffOptions]) => ({
+        objectCode,
+        staffOptions
+    }))
+}
+
+// ✅ 推荐 - 说明由什么转成什么
+/** 批量业务员 Map 转预览分组列表：{ 编码: 业务员列表 } -> [{ objectCode, staffOptions }] */
+function getBatchStaffGroupList(batchStaffOptions) {
+    return Object.entries(batchStaffOptions).map(([objectCode, staffOptions]) => ({
+        objectCode,
+        staffOptions
+    }))
+}
+```
 **代码示例**：
 
 ```javascript

@@ -77,11 +77,14 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        4. `getOther` 仅限下载中心以外的自定义下载场景（文件流、第三方链接等），组件此时仅提供统一按钮样式和 loading 管理。
        - 具体用法参见 `src/components/common/com-download.vue` 文件顶部注释。
    - 🔴 **雷区 10：遗漏 `useCustomizeField` 或自行发散唯一标识**
-     - ❌ 认为原型图中没有画出“自定义列”的设置图标，就在开发标准列表页时直接省略 `useCustomizeField` 的接入；或者在不知道精确标识符时，自行胡乱编造。
-     - ✅ **正解：** 只要是标准的查询列表页（使用了 `sky-search-form-a` 和 `sky-table-pagination`），**无论产品原型是否明确标出，都必须固定强制接入 `useCustomizeField`**。必须为其分配全局唯一的标识符，**在静态开发且无法精确确定标识符时，严禁自行发散，必须使用 TODO 占位**。最后将返回的属性准确绑定到对应组件上。
+     - ❌ 认为原型图中没有画出“自定义列”的设置图标，就在开发标准列表页时直接省略 `useCustomizeField` 的接入；或者根据页面路径、组件名、路由名、业务模块名自行推断唯一标识后直接写入。
+     - ✅ **正解：** 只要是标准的查询列表页（使用了 `sky-search-form-a` 和 `sky-table-pagination`），**无论产品原型是否明确标出，都必须固定强制接入 `useCustomizeField`**。
+     - ✅ `useCustomizeField` 的第一个参数必须以菜单管理页面配置的“唯一标识”为准；综合设置等系统页面同样先到菜单管理确认真实唯一标识。
+     - ✅ 如果当前无法从菜单管理或用户提供的信息中确认唯一标识，必须使用 `TODO:菜单管理页面【唯一标识】` 占位，不能根据路径或命名习惯推断。
+     - ✅ 页面生成或改造完成后，必须主动向用户说明当前使用的唯一标识来源；如果是 TODO 占位，必须提醒用户提供/确认菜单管理中的真实唯一标识后再替换写入。
        ```vue
        // 脚本部分（不确定标识时必须用 TODO 占位）
-       const { searchAProps, fieldTableProps, dateMode } = useCustomizeField('TODO待联调_自定义列唯一标识', () => tableLoad())
+       const { searchAProps, fieldTableProps, dateMode } = useCustomizeField('TODO:菜单管理页面【唯一标识】', () => tableLoad())
        
        // 模板部分
        // <sky-search-form-a v-bind="searchAProps" ...>
@@ -124,6 +127,11 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 弹窗内部结构、状态命名、loading 拆分、`dialogValue`、`formData`、`formRules`、`handleConfirm`、`emit('submit')`、`sky-dialog` / `el-scrollbar` / `sky-form` / `common-grid-form` 等细节，必须以 `src/components/dev-template/dialog/dialog-update.vue` 为唯一模板来源。
      - ✅ 生成弹窗前必须先读取 `src/components/dev-template/dialog/dialog-update.vue`，按其现有结构解析复用；除非需求明确要求，不要自行改成 `el-form`、自定义 footer、内联 loading、或其他弹窗骨架。
      - ✅ 弹窗组件内部负责表单回显、校验、提交接口、成功提示和关闭逻辑；列表页只负责打开弹窗和提交成功后的 `tableLoad()` 或按需求无刷更新当前行。
+   - 🔴 **雷区 10 补充：表单必填校验重复声明**
+     - ❌ 对 `com-form-input`、`com-form-select` 等 `com-form-*` 表单组件已经传了 `required` 时，又在 `useForm` 的 `formRules` 中重复写同字段必填规则。
+     - ✅ **正解：** `com-form-*` 组件自身已支持 `required` 并会生成对应必填校验；普通必填场景只写组件上的 `required` 即可。
+     - ✅ 只有复杂校验、自定义 validator、跨字段联动校验、或组件 `required` 无法覆盖的业务规则，才允许额外在 `useForm` 第二个参数中声明 `formRules`。
+     - ✅ 弹窗模板中若仅存在基础必填项，应保持 `useForm(formData)` 的简单写法，避免为了“保险”重复维护两套校验来源。
    - 🔴 **雷区 11：遗漏路由配置**
      - ❌ 新建页面后，认为视图代码写完即完成任务，没有去检查和配置路由，导致页面无法在系统中实际访问。
      - ✅ **正解：** 新建全新页面后，**必须**主动搜索并更新 `src/router/` 目录下对应业务模块的路由配置文件（例如 `oc-routes.ts`、`crm-routes.ts` 等），添加正确的 `path`、`name` 和 `component` 映射，确保页面可被正确路由加载。
@@ -136,8 +144,10 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 只有当接口属于全新的独立业务域、预计会承载多个页面/一组完整能力，或用户明确要求拆分时，才允许新建 API 文件。
      - ✅ 如果没有充分依据新建 API 文件，也不要在 `src/api/xxx/index.ts` 中新增独立导出命名空间；应沿用既有模块导出，例如 `API.marketingActivities.xxx`。
    - 🔴 **雷区 13：操作按钮位置不规范（含导出等特殊按钮）**
-     - ❌ 在未明确要求的情况下，将“编辑”、“删除”等操作按钮放在表格最右侧的“操作列”中；或在毫无依据的情况下，擅自使用 `<template #right>` 将导出按钮强行挤到表格右上角。
-     - ✅ **正解：** 所有操作的按钮（包括新增、批量操作、针对单条数据的“编辑”，以及 **导出等特殊按钮**），**默认必须全都在表格的左上角**！即直接放置在 `<com-header-between table>` 的默认插槽中（无需区分 `#left` 和 `#right`）。**除非用户或需求明确指明需要放在右侧，否则严禁自作主张使用 `<template #right>` 破坏左侧对齐阵型。**
+     - ❌ 在未明确要求的情况下，将“编辑”、“删除”等操作按钮默认放在表格最右侧的“操作列”中；或在毫无依据的情况下，擅自使用 `<template #right>` 将导出按钮强行挤到表格右上角。
+     - ✅ **正解：** 操作按钮应优先放在表格头部左侧，参考 `src/components/dev-template/list-a.vue` 的 `<template #header><com-header-between table>...</com-header-between></template>` 结构，直接放在 `<com-header-between table>` 默认插槽中。
+     - ✅ 表格操作列只在需求明确要求“每行操作”、或业务必须针对单条记录内联处理时使用，例如明确要求列表行内展示“编辑/删除/查看详情”。
+     - ✅ 导出、批量操作、新增、生成、同步等页面级操作默认放在 header 左侧；除非需求明确指明右侧或表格行内，否则不要自行放到 `#right` 或 `col_operate`。
    - 🔴 **雷区 13 补充：无操作按钮时擅自添加页面标题**
      - ❌ 在 `list-a.vue` 类型页面中，如果表格头部没有操作按钮、导出、批量操作等实际功能，禁止为了显示标题而额外添加：
        `<template #header><com-header-between table><com-page-title /></com-header-between></template>`
@@ -152,3 +162,6 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 🔴 **雷区 16：时间字段列宽分配不合理**
      - ❌ 针对时间类字段没有设定宽度，导致在不同屏幕尺寸下可能出现折行或挤压，影响阅读体验。
      - ✅ **正解：** 只要是包含完整日期时间的字段（例如展示格式为 `YYYY-MM-DD HH:mm:ss`），在 `columns` 配置中**必须为其显式设置 `minWidth: 160`**，确保时间信息始终保持单行完整展示。
+   - 🔴 **雷区 17：页面逻辑忽略全局枚举分支与过程注释规范**
+     - ❌ 在页面生成时，只判断一个枚举值，然后把剩余情况默认当作另一个业务类型处理；或只写函数名注释，关键 `if`、接口选择、兜底返回没有过程注释。
+     - ✅ **正解：** 页面生成同样必须遵循全局规则中的“枚举条件分支判断规范”和“注释位置与内容分层规范”。已知枚举值必须逐个显式判断；关键分支、接口选择、兜底返回必须在代码附近说明业务原因。

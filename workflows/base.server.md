@@ -34,6 +34,17 @@ description: 连接服务器 - 通过 SSH 连接远程服务器并执行操作
 
 > ⚠️ **JMS Token 和密码是动态的，会定期过期**。当 SSH 连接出现 `Permission denied` 时，**必须向用户索取新的 Token 和密码**，不要重试旧凭据。
 
+### 服务器 C — RackNerd（pht.plus）
+
+| 项目     | 值                        |
+| -------- | ------------------------- |
+| IP       | `192.129.240.235`         |
+| 用户名   | `root`                    |
+| 系统     | Ubuntu 24                 |
+| 认证方式 | SSH 密钥                  |
+| 私钥路径 | `~/.ssh/pht_plus_ed25519` |
+| 面板域名 | `bt.pht.plus`             |
+
 ## 连接命令
 
 ### 服务器 A（腾讯云）
@@ -53,6 +64,14 @@ description: 连接服务器 - 通过 SSH 连接远程服务器并执行操作
 ```
 
 连接后会要求输入密码：`PgsSB4pZ3igWeJmW`
+
+### 服务器 C（RackNerd / pht.plus）
+
+通过 Git Bash 的 SSH 连接：
+
+```bash
+"C:\Program Files\Git\usr\bin\ssh.exe" -i %USERPROFILE%\.ssh\pht_plus_ed25519 -o StrictHostKeyChecking=no root@192.129.240.235
+```
 
 // turbo-all
 
