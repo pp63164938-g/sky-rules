@@ -56,6 +56,12 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **静态下拉正解：** 使用 `CommonEnum` 显式标注：
        `const form_状态Options: CommonEnum = [{ label: '启用', value: 1 }]`
      - ✅ 若下拉项需要保留额外字段，必须定义清晰的扩展类型，并让 `useSimpleSelecter<xxx>` 与 `com-form-select` 的实际选项结构保持一致。
+   - 🔴 **雷区 4 补充：枚举字段未按 Options 建模或过度拆常量**
+     - ❌ 需求写了“枚举值：人工编辑、系统计算”，却把字段当普通输入框处理，或在列表 / 弹窗里直接写死中文展示。
+     - ❌ 仅用于下拉展示和提交的静态枚举，不要为每个枚举值机械声明 `xxx人工编辑 = '人工编辑'`、`xxx系统计算 = '系统计算'` 这类常量。
+     - ✅ **正解：** 静态枚举统一声明 `CommonEnum` Options，列表展示复用 `getListOptionLabel(value, xxxOptions)`，表单使用 `com-form-select` / 单选等枚举组件。
+     - ✅ 需求只给中文枚举值、未给 id/code 时，`options.value` 先使用中文枚举值本身；接口文档明确 id/code 后再替换 value。
+     - ✅ 默认值优先从 options 中取，例如 `xxxOptions[0].value`；只有枚举值被多处业务判断或跨文件复用时，才单独抽值常量。
    - 🔴 **雷区 5：主观猜测导入路径**
      - ❌ 凭主观经验直接手写未确认的工具包或组件路径，例如 `import request from '@/utils/request'`，导致严重的类型与位置错误。
      - ✅ **正解：** 除非完全确定，否则必须使用工具去 `view_file` 或搜索本项目真实正在生效的其他代码中的正确文件引用形式，确保完全契合此项目的基建位置。
@@ -132,11 +138,37 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 弹窗内部结构、状态命名、loading 拆分、`dialogValue`、`formData`、`formRules`、`handleConfirm`、`emit('submit')`、`sky-dialog` / `el-scrollbar` / `sky-form` / `common-grid-form` 等细节，必须以 `src/components/dev-template/dialog/dialog-update.vue` 为唯一模板来源。
      - ✅ 生成弹窗前必须先读取 `src/components/dev-template/dialog/dialog-update.vue`，按其现有结构解析复用；除非需求明确要求，不要自行改成 `el-form`、自定义 footer、内联 loading、或其他弹窗骨架。
      - ✅ 弹窗组件内部负责表单回显、校验、提交接口、成功提示和关闭逻辑；列表页只负责打开弹窗和提交成功后的 `tableLoad()` 或按需求无刷更新当前行。
+   - 🔴 **雷区 10 补充：编辑弹窗直接依赖列表 row**
+     - ❌ 标准编辑弹窗禁止直接接收列表行 `row` 并用 `props.row` 初始化表单，这会让弹窗依赖列表字段结构，也容易遗漏详情接口字段。
+     - ✅ **正解：** 编辑入口按 `dev-template/dialog-update.vue` 传入 `id`，弹窗 props 使用 `id?: number | string`，并在弹窗内部通过 `updateDetail()` 获取详情或按模板回填。
+     - ✅ 列表行只负责提供唯一标识，不作为编辑表单的数据源。
+     - ✅ 只有用户明确说明无需详情接口、列表数据就是完整编辑数据，或业务组件本身就是行内编辑器时，才允许传 `row`；使用前必须说明原因。
+   - 🔴 **雷区 10 补充：弹窗表单布局整行滥用**
+     - ❌ 为贴截图或图省事，给新增/编辑弹窗里的所有表单项都加 `class="col-span-full"`，导致标准弹窗从双列网格退化成单列表单。
+     - ✅ **正解：** 标准新增/编辑弹窗必须以 `src/components/dev-template/dialog-update.vue` 的 `common-grid-form` 双列网格为默认布局；普通输入框、选择框、开关、只读字段默认占一列。
+     - ✅ 只有 `textarea`、备注、说明、附件上传、长文本、复杂自定义块等确实需要横向展示空间的字段，才允许使用 `class="col-span-full"` 跨整行。
+     - ✅ 除非设计或需求明确指定特殊宽度，否则不要自行给 `sky-dialog` 加 `width` 覆盖模板默认宽度。
    - 🔴 **雷区 10 补充：表单必填校验重复声明**
      - ❌ 对 `com-form-input`、`com-form-select` 等 `com-form-*` 表单组件已经传了 `required` 时，又在 `useForm` 的 `formRules` 中重复写同字段必填规则。
      - ✅ **正解：** `com-form-*` 组件自身已支持 `required` 并会生成对应必填校验；普通必填场景只写组件上的 `required` 即可。
      - ✅ 只有复杂校验、自定义 validator、跨字段联动校验、或组件 `required` 无法覆盖的业务规则，才允许额外在 `useForm` 第二个参数中声明 `formRules`。
      - ✅ 弹窗模板中若仅存在基础必填项，应保持 `useForm(formData)` 的简单写法，避免为了“保险”重复维护两套校验来源。
+   - 🔴 **雷区 10 补充：前置禁用状态重复提示**
+     - ❌ 按钮已经通过 `:disabled="!hasSingleSelected"` 禁用时，禁止再在 `handleEdit(row)`、`handleDelete(row)`、计算属性或 tooltip 中重复提示“请选择一条数据”。
+     - ❌ `com-form-*` 已经通过 `required` 自动校验时，禁止在提交函数里重复写同字段空值提示。
+     - ✅ **正解：** 页面生成时，未选中、未填写这类入口层状态交给按钮禁用、显隐控制或组件校验处理。
+     - ✅ 业务函数只处理真正的业务禁用原因或异常状态，例如“系统预置项无法删除”“已被模板引用”“接口返回异常”。
+     - ✅ Tooltip 只展示业务原因，不展示已经由禁用态表达的普通前置条件。
+   - 🔴 **雷区 10 补充：表单组件默认值重复声明**
+     - ❌ 未查看 `com-form-input` 源码，就根据需求文档里的“限制 120 / 限制 500”直接给组件补 `maxlength="120"` 或 `maxlength="500"`。
+     - ✅ **正解：** 使用 `com-form-input` 前必须先确认组件默认值；当前组件普通输入框默认 `maxlength: 120`，`type="textarea"` 默认 `maxlength: 500`，且 textarea 默认带 `autosize`。
+     - ✅ 需求限制与组件默认值一致时，不要重复声明；只有需求限制不同于组件默认值，或业务需要显示字数统计等额外行为时，才显式传入对应 props。
+     - ✅ 页面生成时遇到 `com-form-*` 的 `required`、`maxlength`、`clearable`、`autosize` 等常见能力，必须先读组件源码或类型定义，确认默认值后再决定是否传参。
+   - 🔴 **雷区 10 补充：useForm 泛型兜底**
+     - ❌ 弹窗表单中禁止为了省事写 `useForm<Omix>({...})`，这会抹掉表单字段结构，降低类型约束。
+     - ✅ **正解：** 标准弹窗按 `dev-template/dialog-update.vue` 使用 `useForm({...})`，让 TypeScript 根据初始化对象自动推断字段类型。
+     - ✅ 只有确实存在复杂表单模型、接口模型复用、联合字段或需要显式约束返回结构时，才允许定义明确业务类型并传给 `useForm<业务表单类型>`。
+     - ✅ 不允许用 `Omix`、`any` 这类宽泛类型作为“让类型先过”的兜底泛型。
    - 🔴 **雷区 11：遗漏路由配置**
      - ❌ 新建页面后，认为视图代码写完即完成任务，没有去检查和配置路由，导致页面无法在系统中实际访问。
      - ✅ **正解：** 新建全新页面后，**必须**主动搜索并更新 `src/router/` 目录下对应业务模块的路由配置文件（例如 `oc-routes.ts`、`crm-routes.ts` 等），添加正确的 `path`、`name` 和 `component` 映射，确保页面可被正确路由加载。
@@ -148,11 +180,19 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **正解：** 新增接口前必须先查看当前业务模块已有 API 文件，按业务域归属复用已有文件。例如页面属于“活动&推广管理”，且已存在 `src/api/csc/marketing-activities.ts`，则接口应优先追加到该文件中。
      - ✅ 只有当接口属于全新的独立业务域、预计会承载多个页面/一组完整能力，或用户明确要求拆分时，才允许新建 API 文件。
      - ✅ 如果没有充分依据新建 API 文件，也不要在 `src/api/xxx/index.ts` 中新增独立导出命名空间；应沿用既有模块导出，例如 `API.marketingActivities.xxx`。
-   - 🔴 **雷区 13：操作按钮位置不规范（含导出等特殊按钮）**
-     - ❌ 在未明确要求的情况下，将“编辑”、“删除”等操作按钮默认放在表格最右侧的“操作列”中；或在毫无依据的情况下，擅自使用 `<template #right>` 将导出按钮强行挤到表格右上角。
-     - ✅ **正解：** 操作按钮应优先放在表格头部左侧，参考 `src/components/dev-template/list-a.vue` 的 `<template #header><com-header-between table>...</com-header-between></template>` 结构，直接放在 `<com-header-between table>` 默认插槽中。
-     - ✅ 表格操作列只在需求明确要求“每行操作”、或业务必须针对单条记录内联处理时使用，例如明确要求列表行内展示“编辑/删除/查看详情”。
-     - ✅ 导出、批量操作、新增、生成、同步等页面级操作默认放在 header 左侧；除非需求明确指明右侧或表格行内，否则不要自行放到 `#right` 或 `col_operate`。
+   - 🔴 **雷区 13：禁止直接把操作按钮放入表格操作列**
+     - ❌ 禁止在标准列表页中直接新增 `operateCol`、`#col_operate`、`prop: 'operate'`，把“编辑 / 删除 / 详情”等操作默认放在表格最右侧操作列。
+     - ❌ 原型图或截图里出现操作列，也不能直接照搬为行内操作；Kunlun 页面生成必须先服从 `src/components/dev-template/list-a.vue` 的 header 操作模式。
+     - ✅ **正解：** “编辑 / 删除 / 详情”等单行操作默认放在表格 header 左侧，通过 `show-select` 选中一条数据后操作。
+     - ✅ 新增、导出、批量操作、生成、同步等页面级操作也默认放在 header 左侧。
+     - ✅ 只有用户明确说“必须每行内联操作 / 保留表格操作列 / 每行展示编辑删除”，或业务确实无法通过选中行操作表达时，才允许使用操作列；使用前必须说明原因。
+     - ✅ 如果使用操作列，优先按项目已有封装方式处理，例如 `com-table-operate`，不要随手堆多个裸 `el-button`。
+   - 🔴 **雷区 13 补充：删除操作模式擅自定单删或批删**
+     - ❌ 接口文档未明确时，禁止默认把“删除”写成单删，也禁止默认写成批量删除。
+     - ✅ **正解：** 删除模式必须以接口文档或后端说明为准；单删使用 `hasSingleSelected` + `firstSelected`，批量删除使用 `hasSelected` + `selectedTable`。
+     - ✅ 接口未提供时，应先询问用户或使用 `TODO待联调_删除是否支持批量` / `TODO待联调_评估项ID列表` 等待联调标记，不能把猜测字段当成正式字段。
+     - ✅ 静态开发阶段若用户确认先按批量删除占位，按钮禁用态使用 `!hasSelected`；若确认按单删占位，按钮禁用态使用 `!hasSingleSelected`。
+     - ✅ 删除禁用原因需要按选中范围判断：批量删除时任一选中项命中“系统预置 / 被引用 / 有历史数据”等业务限制，都应禁用或拦截删除。
    - 🔴 **雷区 13 补充：无操作按钮时擅自添加页面标题**
      - ❌ 在 `list-a.vue` 类型页面中，如果表格头部没有操作按钮、导出、批量操作等实际功能，禁止为了显示标题而额外添加：
        `<template #header><com-header-between table><com-page-title /></com-header-between></template>`
