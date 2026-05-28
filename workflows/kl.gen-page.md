@@ -22,6 +22,11 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 如果有Tab页面：`tab-template/index.vue`
 
 2. **防“四不像”高危雷区对照单**
+   - 🔴 **雷区 0：SFC 块顺序不按 dev-template**
+     - ❌ 按个人习惯把 `<script>` 写在 `<template>` 前面，或者只复制模板逻辑、不复制 SFC 文件结构。
+     - ✅ **正解：** 生成 `.vue` 文件时，必须连同 SFC 块顺序一起克隆 `src/components/dev-template/` 对应模板；模板是 `文件头注释 → <template> → <script> → <style>`，新页面也必须保持同样顺序。
+     - ✅ `list-a.vue`、`list-b.vue`、`dialog-update.vue` 当前均为 `<template>` 在上、`<script>` 在下；页面和弹窗生成时必须保持这个顺序。
+     - ✅ 完成后必须用搜索或读取文件确认目标文件与模板的块顺序一致，例如检查 `^<template>`、`^<script>`、`^<style>` 出现顺序；如果不一致，必须先修正再交付。
    - 🔴 **雷区 1：外拆配置**
      - ❌ 像老 Vue2 项目一样建一堆如 `data.tsx`、`config.js` 的文件导出 `columns`。
      - ✅ **正解：** 全部内联，就在本 `index.vue` 里面的 `useTable` 方法声明内部去写 `[ { label: '...', prop: '...' } ]` 即可。 
