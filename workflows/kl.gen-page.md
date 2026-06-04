@@ -20,6 +20,7 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 如果是搜素A（常规表单独立）：`list-a.vue`
    - 如果是搜索B（表单进折叠）：`list-b.vue`
    - 如果有Tab页面：`tab-template/index.vue`
+   - 如果是详情页：`detail.vue`
 
 2. **防“四不像”高危雷区对照单**
    - 🔴 **雷区 0：SFC 块顺序不按 dev-template**
@@ -36,12 +37,19 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 🔴 **雷区 3：复杂化搜索表单事件**
      - ❌ 自己实现 `@search="onSearch"` 并且还在方法里搞一堆 `removeEmpty(handleActiveFormParams(...))` 然后才更新刷新列表，并创建 `settingSearchFrom` 保存参数。
      - ✅ **正解：** 表单的触发就直接 `<sky-search-form-a @search="tableLoad(searchForm)" ...>` 结束战斗！如果有旁支获取聚合数据的操作，才自定义一个方法，并在内部纯粹地调用 `tableLoad(searchForm.value)` 和其余获取方法即可。
-   - 🔴 **雷区 4：表单与表格字段及下拉选不带语义前缀或未保持一致**
-     - ❌ `searchForm` 或 `columns` 的配置里的属性直接写原始键名，或者下拉选项随意命名为 `TODO待联调_状态Options` 但其实真正绑定的表单字段叫 `form_TODO待联调_状态`。
+   - 🔴 **雷区 4：表单与表格字段及下拉选缺少阶段区分**
+     - ❌ 静态开发 / 未联调阶段缺字段依据时，把临时字段伪装成正式接口字段，导致后续联调无法搜索定位。
+     - ❌ 联调确认后，已经确认的字段、枚举、Options 仍继续使用 `form_`、`table_`、`mock`、`temp`、`待联调` 等临时开发命名，导致正式代码看起来像联调占位。
+     - ❌ 为了套模板，在已确认接口字段上机械增加 `form_` / `table_` 前缀，导致 `searchForm` / `formData` 字段名和接口参数字段名不一致。
+     - ❌ 需求需要下拉 / 远程搜索时，没有对应下拉接口，却拿分页接口、列表接口或相似页面接口硬包装成 Options，例如没有“考核模板下拉接口”时用“评估模板分页查询”包装 `templateIdOptions`。
+     - ❌ 缺少接口或数据源时，直接删除搜索项、按钮、页签、表格列、弹窗区域，只在代码注释里说明缺口，导致用户以为需求不存在。
      - ✅ **正解：** 
-       - 表单字段绑定的 `prop` 及 `v-model` 必须带 `form_` 开头（如 `form_TODO待联调_用户名`）；
-       - 表格列的 `prop` 必须带 `table_` 开头（如 `table_TODO待联调_用户名`）；
-       - **下拉列表接收变量名必须与所绑定的表单字段名完全一致并仅在末尾附加 `Options`**（例如：如果所绑定的字段为 `form_TODO待联调_状态`，则选项配置名必须严格声明为 `const [form_TODO待联调_状态Options]`，并以 `:options="form_TODO待联调_状态Options"` 的方式传入）。
+       - 静态开发 / 未联调阶段允许使用 `form_`、`table_`、`TODO待联调_` 等临时命名预留，但必须可搜索、可定位，不能伪装成正式字段；
+       - 已经通过接口文档、抓包或后端确认的表单字段，`prop` 与 `v-model` 必须直接使用接口参数字段名，不再额外套 `form_` 前缀；
+       - 已经确认的表格列 `prop` 必须直接使用接口响应字段名，不再额外套 `table_` 前缀；
+       - 未确认字段才使用 `TODO待联调_用途描述` 或 `TODO无此联调字段_用途描述`，并在联调后替换为真实字段或保留可搜索缺失标记；
+       - **下拉 Options 变量必须按接口字段链路命名**：`status` 的下拉就是 `statusOptions`，`templateId` 的远程下拉就是 `templateIdOptions` / `templateIdOptionsDispatch`。禁止为了套模板机械命名成 `form_考核状态Options`，也不要把已确认字段改成难以和接口字段对应的中文变量名。
+       - 缺少接口但需求入口明确存在时，必须保留用户可感知入口：禁用态、空状态、提示文案、tips 或占位组件均可；同时使用 `TODO无此联调字段_用途描述` 标记并在最终回复中列出待提供接口 / 字段 / 返回结构。
    - 🔴 **雷区 4 补充：下拉接口返回 `id/name` 时重复手写转换**
      - ❌ 对接口返回的标准 `id/name` 下拉数据手写 `data.map(item => ({ label: item.name, value: item.id }))`。
      - ✅ **正解：** 必须优先复用项目公共转换工具：
@@ -51,10 +59,10 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 只有接口返回结构不是标准 `id/name`，或需要保留额外字段、特殊 value 规则时，才允许按业务显式转换，并在代码附近说明原因。
    - 🔴 **雷区 4 补充：下拉 Options 未显式声明类型**
      - ❌ `com-form-select` 使用的 `options` 变量不声明类型，或 `useSimpleSelecter` 不传泛型，导致类型无法和 `com-form-select` 的 `options?: CommonEnum` 对齐。
-     - ✅ **远程下拉正解：** 使用 `useSimpleSelecter<CommonEnumItem>` 或明确的业务下拉项类型：
-       `const [form_状态Options] = useSimpleSelecter<CommonEnumItem>(...)`
-     - ✅ **静态下拉正解：** 使用 `CommonEnum` 显式标注：
-       `const form_状态Options: CommonEnum = [{ label: '启用', value: 1 }]`
+      - ✅ **远程下拉正解：** 使用 `useSimpleSelecter<CommonEnumItem>` 或明确的业务下拉项类型，并按接口字段链路命名：
+        `const [templateIdOptions, templateIdOptionsDispatch] = useSimpleSelecter<CommonEnumItem>(...)`
+      - ✅ **静态下拉正解：** 使用 `CommonEnum` 显式标注，并按接口字段链路命名：
+        `const statusOptions: CommonEnum = [{ label: '启用', value: 1 }]`
      - ✅ 若下拉项需要保留额外字段，必须定义清晰的扩展类型，并让 `useSimpleSelecter<xxx>` 与 `com-form-select` 的实际选项结构保持一致。
    - 🔴 **雷区 4 补充：枚举字段未按 Options 建模或过度拆常量**
      - ❌ 需求写了“枚举值：人工编辑、系统计算”，却把字段当普通输入框处理，或在列表 / 弹窗里直接写死中文展示。
@@ -67,8 +75,12 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ❌ 凭主观经验直接手写未确认的工具包或组件路径，例如 `import request from '@/utils/request'`，导致严重的类型与位置错误。
      - ✅ **正解：** 除非完全确定，否则必须使用工具去 `view_file` 或搜索本项目真实正在生效的其他代码中的正确文件引用形式，确保完全契合此项目的基建位置。
    - 🔴 **雷区 6：临时权限标识随意发散**
-     - ❌ 自行根据操作名编造不同的权限标识占位符（如 `v-sky-authorize="'TODO：业务批量确认操作权限'"`）。这会导致在未配置真实权限前，与本项目设定的临时权限本地降级方案脱节。
-     - ✅ **正解：** 开发期针对权限待确定的按钮或功能节点，**必须统一、恒定地使用 `v-sky-authorize="'TODO：功能权限待配置'"` 这一字符串**，项目钩子中存在专门针对本地环境（DEV）的检测策略来统一放行它。
+     - ❌ 在没有菜单管理、接口文档、后端确认、用户确认或项目已有同功能真实权限标识作为依据时，禁止自行推测权限标识，例如 `v-sky-authorize="'sys:XXX'"`、`v-sky-authorize="'xxx:yyy:zzz'"`。
+     - ❌ 禁止根据路由路径、页面目录、按钮文案、操作名自行拼接看似合理的权限标识；写了未配置的真实权限，后续既不知道要配，也不知道该配哪个。
+     - ❌ 禁止自行根据操作名编造不同的权限占位符，例如 `v-sky-authorize="'TODO：业务批量确认操作权限'"`。
+     - ✅ 如果菜单管理、接口文档、后端或用户已经明确提供真实权限标识，才允许按真实值填写。
+     - ✅ 如果功能节点需要权限控制，但真实权限标识暂未确认，必须统一使用 `v-sky-authorize="'TODO：功能权限待配置'"` 预留；后续确认菜单权限配置后再替换为真实标识。
+     - ✅ 项目钩子中存在专门针对本地环境（DEV）的检测策略，会统一放行 `TODO：功能权限待配置` 这一临时权限占位。
    - 🔴 **雷区 7：汇总组件（sky-summary）随意挂载与生命周期混乱**
      - ❌ 自行将汇总接口调用的动作放入 `onMounted`，或者随意用 `watch` 监听表格数据变化再去拉汇总，没有和表格的查询条件参数相互绑定。
      - ✅ **正解：** 如果需求指出需要数据汇总控制台，`src/components/dev-template/` 下的基础骨架中已被预留好了相关的 `<template #tool>` 插槽与对应的 `getSummaryData` 获取方法结构。**必须直接使用该解法**；并保证获取动作**必须且只能**被挂载接管于 `useTable` 的 `loadAfter: (params) => getSummaryData(params)` 钩子中触发，以确保每次列表发生查询变化时，自动联动刷新底部的汇总数据！
@@ -183,9 +195,70 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 只有弹窗或页面内部存在动态表格、复杂配置区、独立校验区、上传/选择器、可复用业务块等明确业务子模块时，才拆分该子模块。
      - ✅ 拆分后的子组件必须有清晰业务边界：子组件负责自身状态、局部交互、局部校验和样式；父组件只负责打开关闭、主提交、接口调用和成功后的列表刷新。
      - ✅ 子组件对外只暴露必要能力，例如 `validate()`、`addRow()`；如果需要大量透传 props、emit、ref 方法，说明边界没有拆清楚，应优先保留在当前文件。
+   - 🔴 **雷区 10 补充：详情模板使用边界**
+     - ❌ 禁止把 `src/components/dev-template/detail.vue` 当成固定业务模板使用，默认生成“基础信息 / 明细信息 / 操作日志”等业务模块。
+     - ❌ 禁止为了还原单个详情页，把折叠头部、概要指标、评分项、审批区、分层规则等具体业务结构写进详情基础模板。
+     - ✅ **正解：** `detail.vue` 只表达三类通用结构：表单形式展示、表格形式展示、固定底部操作。
+     - ✅ 表单形式展示必须优先使用 `sky-form + sky-form-item`；纯展示内容默认使用 `sky-ellipsis-tooltip` 单行展示，除非需求明确要求多行展示。
+     - ✅ 表单布局需要宽屏多列、窄屏自动降列时，使用 `common-auto-grid-form`，不要在详情页重复手写响应式 grid。
+     - ✅ 详情字段展示统一使用 `sky-form + sky-form-item` 承载只读字段，不要自行拼 `div + label + value` 结构；这样后续字段从只读展示切换为可编辑表单时，可以沿用同一套表单骨架。
+     - ✅ 详情字段布局优先使用项目公共样式 `form-item-content-start common-auto-grid-form` 做弹性列展示，通过 CSS 变量控制最小列宽和列间距；禁止为每个详情页手写 grid、flex 列数，或自行计算 label 最大宽度。
+     - ✅ 表格形式展示默认使用 `sky-table-pagination`；只有需求明确是静态规则表、复杂合并表或表格组件无法满足时，才允许使用更贴合业务的表格实现，并说明原因。
+     - ✅ 固定底部操作统一使用 `com-page-operate-footer`；无固定底部操作的详情页直接删除该模块。
+     - ✅ 详情页中的表单模块、表格模块、底部操作模块都必须按需求复制、删除或改名，标题使用真实业务语义；禁止保留模板里的 `TODO表单模块标题`、`TODO表格模块标题`。
+     - ✅ 详情模块标题由详情页内部根据业务模块或详情数据生成，禁止依赖列表页通过 route query 传入展示标题；列表页只传详情查询必需的加密标识。
+     - ✅ 详情页内容由详情页内部通过详情接口或本页数据结构生成，禁止让列表页承担详情内容组装职责。
+     - ✅ 详情页复杂业务块只有在当前文件明显影响阅读时才拆分，拆到当前详情页同级 `components/` 目录；普通表单展示、普通表格展示不要为了行数强行拆组件。
+   - 🔴 **雷区 10 补充：复杂弹窗目录化边界**
+     - ❌ 简单新增 / 编辑弹窗禁止为了“看起来规范”强行改成文件夹结构。
+     - ❌ 禁止只因为弹窗里出现上传区、选择器、动态表格、提示列表等“复杂 UI”，就直接升级为文件夹结构；目录化的前提是已经需要抽离额外文件，否则文件夹没有实际作用。
+     - ❌ 禁止在 `src/components/dev-template/dialogs/` 里开发真实业务弹窗；该目录只用于说明复杂弹窗目录化规范。
+     - ❌ 禁止维护第二套完整弹窗模板，例如把 `dialog-update.vue` 的完整内容再复制一份到 `dev-template/dialogs/dialog-xxx/index.vue`，导致两边同步改模板。
+     - ❌ 复杂弹窗拆分时，禁止直接新增 `dialog-xxx.vue`、`dialog-update.xxx.vue`，也禁止把 `dialog-xxx-table.vue`、`dialog-xxx-config.vue` 等文件平铺在页面目录下。
+     - ✅ **简单弹窗正解：** 弹窗逻辑仍可由单个文件清晰承载时，统一放在页面 `dialog/` 目录下，例如 `dialog/dialog-import-score.vue`，列表页使用 `import('./dialog/dialog-import-score.vue')` 动态加载。
+     - ✅ **复杂弹窗正解：** 只有复杂到必须抽离至少一个额外文件时，才在目标业务页面目录下使用文件夹结构，例如弹窗专属 `components/`、`types.ts`、`hooks/`、`dialog-业务名.ts`。
+     - ✅ 是否目录化的判断标准不是“弹窗看起来复杂”，而是“单文件是否已经无法清晰表达边界，且确实存在可独立维护的额外文件”。
+     - ✅ 复杂弹窗目录化结构：
+       ```text
+       dialogs/
+         dialog-业务名/
+           index.vue       # 从 src/components/dev-template/dialog-update.vue 复制后改造
+           components/     # 当前弹窗专属组件，按需创建
+           dialog-业务名.ts # 当前弹窗专属函数 / 常量，按需创建
+           types.ts        # 当前弹窗专属类型，按需创建
+           hooks/          # 当前弹窗专属 hooks，按需创建
+       ```
+     - ✅ 如果目录下只有一个 `index.vue`，没有任何专属子组件、类型、hooks 或工具文件，应退回单文件 `dialog/dialog-业务名.vue`。
+     - ✅ 复杂弹窗的 `index.vue` 仍然必须以 `dialog-update.vue` 为唯一骨架来源，保留 `sky-dialog`、`dialogValue`、`loadingState`、`useForm`、`handleConfirm`、`updateDetail` 等主结构，再按业务拆出局部模块。
+     - ✅ `components/` 只放当前弹窗专属组件；子组件按业务职责命名，例如 `rule-condition-table.vue`、`import-error-list.vue`，禁止命名成 `table.vue`、`config.vue`。
+     - ✅ 列表页动态加载路径：简单弹窗用 `import('./dialog/dialog-业务名.vue')`；复杂弹窗用 `import('./dialogs/dialog-业务名/index.vue')`。
+     - ✅ 生成复杂弹窗前，必须先读取 `src/components/dev-template/dialogs/README.md`，确认这是模板规范目录，不是业务开发目录。
    - 🔴 **雷区 11：遗漏路由配置**
      - ❌ 新建页面后，认为视图代码写完即完成任务，没有去检查和配置路由，导致页面无法在系统中实际访问。
      - ✅ **正解：** 新建全新页面后，**必须**主动搜索并更新 `src/router/` 目录下对应业务模块的路由配置文件（例如 `oc-routes.ts`、`crm-routes.ts` 等），添加正确的 `path`、`name` 和 `component` 映射，确保页面可被正确路由加载。
+   - 🔴 **雷区 11 补充：详情跳转参数未加密**
+     - ❌ 跳转详情页时禁止直接把业务 id、code、单号等明文参数裸放到 `query` 中，例如 `query: { id: row.id }`。
+     - ✅ **正解：** 详情跳转必须使用项目公共方法加密参数：
+       ```ts
+       import { encodeRouteQuery } from '@/utils/utils-common'
+
+       router.push({
+           name: 'TODO详情路由Name',
+           query: {
+               ...encodeRouteQuery({ id: row.id })
+           }
+       })
+       ```
+     - ✅ 详情页读取参数必须使用对应公共方法解密，默认直接读取一次即可：
+       ```ts
+       import { decodeRouteQuery } from '@/utils/utils-common'
+
+       /** 详情页路由参数 */
+       const routeQuery = decodeRouteQuery()
+       ```
+     - ✅ 只有同一个详情组件实例内确实会切换 query 时，才使用 `useRoute + watch` 明确监听并重新拉详情；不要为了“响应式”默认包一层 `computed(() => decodeRouteQuery())`。
+     - ✅ 列表页跳详情只传详情查询必需参数；详情页标题、展示内容、模块标题应在详情页内部根据详情数据生成，不通过 query 透传。
+     - ✅ 如需跨页携带复杂临时数据，优先参考项目已有 `emitBringData` / `receiveBringData` 用法，不要把大对象直接塞入 route query。
    - 🔴 **雷区 12：遗漏 API 的全局异常提示配置**
      - ❌ 在定义 API 时，不加 `message` 参数，导致接口报错时没有全局的错误拦截提示；或者在每个接口里硬编码写死 `message: true`，导致后期无法统一调整。
      - ✅ **正解：** 在定义所有可能需要报错强提醒的 API（包括查询、操作等）时，**必须**参考 CRM 模块的规范，在 API 文件的头部统一声明 `const message = true // 默认开启异常提醒`，然后在 `request` 配置中传入简写的 `message`。由统一拦截器自动接管并抛出业务异常提示。至于成功提示（`ElMessage.success`），仍然由业务方在 `try` 块内按需手动抛出。
@@ -201,6 +274,13 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 新增、导出、批量操作、生成、同步等页面级操作也默认放在 header 左侧。
      - ✅ 只有用户明确说“必须每行内联操作 / 保留表格操作列 / 每行展示编辑删除”，或业务确实无法通过选中行操作表达时，才允许使用操作列；使用前必须说明原因。
      - ✅ 如果使用操作列，优先按项目已有封装方式处理，例如 `com-table-operate`，不要随手堆多个裸 `el-button`。
+   - 🔴 **雷区 13 补充：表头操作按钮顺序混乱**
+     - ❌ 禁止把 `添加` 放在 `编辑 / 删除` 后面，导致列表页常规维护入口顺序不一致。
+     - ❌ 禁止按编码时想到什么就写什么的顺序排列按钮。
+     - ✅ **正解：** 标准列表页表头操作区中，若同时存在 `添加 / 编辑 / 删除`，必须固定按 `添加 → 编辑 → 删除` 排列。
+     - ✅ `添加` 是新增入口，默认放在最前；`编辑 / 删除` 是选中行维护操作，紧跟其后。
+     - ✅ `详情 / 复制 / 导出 / 批量操作 / 生成任务 / 同步` 等其他按钮放在 `添加 / 编辑 / 删除` 后面，再按业务主次排序。
+     - ✅ `src/components/dev-template/list-a.vue` / `list-b.vue` 的示例也必须保持这个顺序，页面生成时直接照模板克隆。
    - 🔴 **雷区 13 补充：删除操作模式擅自定单删或批删**
      - ❌ 接口文档未明确时，禁止默认把“删除”写成单删，也禁止默认写成批量删除。
      - ✅ **正解：** 删除模式必须以接口文档或后端说明为准；单删使用 `hasSingleSelected` + `firstSelected`，批量删除使用 `hasSelected` + `selectedTable`。
