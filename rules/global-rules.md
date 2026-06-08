@@ -1882,11 +1882,12 @@ volta pin node@20
 当给用户输出可复制执行的终端命令时，必须根据目标终端选择正确路径格式，避免 Windows 路径在 Git Bash 中被反斜杠转义。
 
 - 如果命令代码块标记为 `bash`，或上下文要求在 Git Bash / MINGW64 中执行：
-  - ❌ 禁止输出 Windows 反斜杠路径：`D:\self\Ai\sky-rules\sync-workflows.py`
-  - ✅ 必须输出 Git Bash 可执行路径：`D:/self/Ai/sky-rules/sync-workflows.py`
-  - ✅ 路径包含空格、中文或特殊字符时必须加双引号：`python "D:/self/Ai/sky-rules/sync-workflows.py" --no-git`
+  - ❌ 禁止输出 Windows 反斜杠路径：`D:\实际仓库路径\sky-rules\sync-workflows.py`
+  - ✅ 必须输出基于当前已确认仓库位置的 Git Bash 可执行路径：`D:/实际仓库路径/sky-rules/sync-workflows.py`
+  - ✅ 路径包含空格、中文或特殊字符时必须加双引号：`python "D:/实际仓库路径/sky-rules/sync-workflows.py" --no-git`
+  - ✅ 如果当前终端已在 `sky-rules` 仓库根目录，优先输出相对命令：`python sync-workflows.py --no-git`
 
-- 如果命令代码块标记为 `powershell`，才允许使用 Windows 反斜杠路径：`D:\self\Ai\sky-rules\sync-workflows.py`
+- 如果命令代码块标记为 `powershell`，才允许使用当前已确认仓库位置的 Windows 反斜杠路径：`D:\实际仓库路径\sky-rules\sync-workflows.py`
 
 **判断标准**：给用户的命令必须能在其当前终端中直接复制执行；不要把 PowerShell 路径格式放进 Bash 命令块。
 

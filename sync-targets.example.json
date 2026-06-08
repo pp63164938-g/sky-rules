@@ -1,0 +1,21 @@
+{
+  "targets": [
+    {
+      "name": "示例编辑器全局规则",
+      "mode": "codex_rules",
+      "source": "rules/global-rules.md",
+      "target": "${HOME}/.example-ai/AGENTS.md",
+      "target_env": "SKY_RULES_EXAMPLE_RULES_FILE",
+      "detect": "${HOME}/.example-ai"
+    },
+    {
+      "name": "示例编辑器工作流",
+      "mode": "mirror",
+      "source": "workflows",
+      "target": "${HOME}/.example-ai/workflows",
+      "target_env": "SKY_RULES_EXAMPLE_WORKFLOWS_DIR",
+      "detect": "${HOME}/.example-ai",
+      "pattern": "*.md"
+    }
+  ]
+}

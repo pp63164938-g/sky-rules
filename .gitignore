@@ -1,0 +1,9 @@
+# Python 临时产物
+__pycache__/
+*.pyc
+
+# Sky Rules 本机私有同步目标配置
+sync-targets.local.json
+
+# 同步体检临时写入检测文件
+.sky-rules-write-test-*.tmp

@@ -13,6 +13,7 @@ sky-rules/
 │   ├── kl.*.md             # Kunlun 项目专用工作流
 │   └── more-tool.*.md      # 工具类工作流
 ├── sync-workflows.py       # 同步脚本（核心逻辑）
+├── sync-targets.example.json # 新增编辑器同步目标配置示例
 ├── sync-to-editors-only.bat            # 双击：仅同步到编辑器，不执行 Git 操作
 ├── commit-push-and-sync-to-editors.bat # 双击：Git 提交、推送并同步到编辑器
 └── README.md
@@ -39,6 +40,9 @@ sky-rules/
 |------|------|---------|
 | **仅同步到编辑器，不执行 Git 操作（推荐）** | `sync-to-editors-only.bat` | `python sync-workflows.py --no-git` |
 | **Git 提交、推送并同步到编辑器** | `commit-push-and-sync-to-editors.bat` | `python sync-workflows.py` |
+| **只查看当前电脑会同步到哪里** | - | `python sync-workflows.py --print-targets` |
+| **新电脑接入体检（推荐首次执行）** | - | `python sync-workflows.py --doctor` |
+| **强制预创建全部默认目标** | - | `python sync-workflows.py --no-git --include-missing-targets` |
 
 **同步内容：**
 
@@ -51,10 +55,158 @@ sky-rules/
 
 **同步特性：**
 - 使用 Python `shutil` 处理文件复制，兼容中文路径
+- 仓库路径自适应：脚本根据自身所在目录定位源文件，可克隆到任意目录
+- 用户目录自适应：同步目标基于当前电脑的用户目录（`~` / `Path.home()`）
+- 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
+- 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
+- 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
 - 增量同步：比较修改时间，跳过未变更文件
 - 镜像模式：自动删除目标目录中源不存在的文件
 - `sync-to-editors-only.bat` 仅同步文件，不执行任何 Git 操作
 - `commit-push-and-sync-to-editors.bat` 会自动执行 git commit + push，再同步文件
+
+### 自定义同步目标
+
+新电脑接入成本很低：先体检，再同步。
+
+```powershell
+python sync-workflows.py --doctor
+python sync-workflows.py --no-git
+```
+
+`--doctor` 不会同步文件，只会检查：
+
+- 仓库源文件是否存在
+- 当前电脑解析到的 Codex / Antigravity / Windsurf / Agents 目标路径
+- 每个目标路径来自默认约定、工具环境变量，还是 `SKY_RULES_*` 覆盖
+- 目标或最近父目录是否可写
+
+如果体检输出 `OK 当前电脑可以执行同步`，直接运行 `python sync-workflows.py --no-git`。
+
+如果电脑没有使用某个工具，例如没有 Windsurf 或 Antigravity，`--doctor` 会显示 `SKIP`，普通同步会自动跳过，不会创建无用目录。只有以下情况才会同步到该工具：
+
+- 已检测到该工具目录存在
+- 已配置对应 `SKY_RULES_*` 环境变量
+- 显式传入 `--include-missing-targets` 要求预创建默认目录
+
+默认情况下，脚本使用当前用户目录下的常见路径：
+
+| 目标 | 默认路径 |
+|------|----------|
+| Windsurf 工作流 | `~/.codeium/windsurf/global_workflows/` |
+| Windsurf 全局规则 | `~/.codeium/windsurf/memories/global_rules.md` |
+| Antigravity 工作流 | `~/.gemini/antigravity/global_workflows/` |
+| Antigravity/Gemini 全局规则 | `~/.gemini/GEMINI.md` |
+| Codex 全局规则 | `~/.codex/AGENTS.md` |
+| Agents/Codex Skills | `~/.agents/skills/` |
+
+如果某台电脑的目录不同，不要修改 `sync-workflows.py`，优先配置环境变量：
+
+| 环境变量 | 作用 |
+|----------|------|
+| `SKY_RULES_WINDSURF_HOME` | 覆盖 Windsurf 根目录，默认派生 `global_workflows/` 与 `memories/global_rules.md` |
+| `SKY_RULES_GEMINI_HOME` | 覆盖 Gemini 根目录，默认派生 `antigravity/global_workflows/` 与 `GEMINI.md` |
+| `SKY_RULES_CODEX_HOME` | 覆盖 Codex 根目录，默认派生 `AGENTS.md` |
+| `SKY_RULES_AGENTS_HOME` | 覆盖 Agents 根目录，默认派生 `skills/` |
+| `SKY_RULES_WINDSURF_WORKFLOWS_DIR` | 精确覆盖 Windsurf 工作流目录 |
+| `SKY_RULES_WINDSURF_RULES_FILE` | 精确覆盖 Windsurf 全局规则文件 |
+| `SKY_RULES_GEMINI_WORKFLOWS_DIR` | 精确覆盖 Antigravity 工作流目录 |
+| `SKY_RULES_GEMINI_RULES_FILE` | 精确覆盖 Antigravity/Gemini 全局规则文件 |
+| `SKY_RULES_CODEX_AGENTS_FILE` | 精确覆盖 Codex `AGENTS.md` 文件 |
+| `SKY_RULES_AGENTS_SKILLS_DIR` | 精确覆盖 Agents/Codex Skills 目录 |
+
+兼容优先级：
+
+1. 精确目标变量优先，例如 `SKY_RULES_GEMINI_RULES_FILE`
+2. Sky Rules 根目录变量其次，例如 `SKY_RULES_GEMINI_HOME`
+3. 工具自身环境变量，例如 Codex 的 `CODEX_HOME`
+4. 默认用户目录约定，例如 `~/.gemini/GEMINI.md`
+
+新电脑首次配置建议先执行：
+
+```powershell
+python sync-workflows.py --doctor
+```
+
+确认输出路径和可写状态符合当前电脑的 Codex / Antigravity / Windsurf 配置后，再执行同步。
+
+PowerShell 临时配置示例：
+
+```powershell
+$env:SKY_RULES_WINDSURF_HOME = "$env:USERPROFILE\.windsurf"
+$env:SKY_RULES_GEMINI_HOME = "D:\Tools\gemini"
+python sync-workflows.py --no-git
+```
+
+PowerShell 持久配置示例：
+
+```powershell
+[Environment]::SetEnvironmentVariable("SKY_RULES_WINDSURF_HOME", "$env:USERPROFILE\.windsurf", "User")
+[Environment]::SetEnvironmentVariable("SKY_RULES_GEMINI_HOME", "D:\Tools\gemini", "User")
+```
+
+重新打开终端后执行：
+
+```powershell
+python sync-workflows.py --doctor
+python sync-workflows.py --no-git
+```
+
+### 扩展其他编辑器
+
+新增其他编辑器时，优先使用配置文件，不直接改 `sync-workflows.py`：
+
+| 文件 | 用途 | 是否建议提交 |
+|------|------|--------------|
+| `sync-targets.json` | 团队共享的新编辑器同步目标 | 是 |
+| `sync-targets.local.json` | 某台电脑自己的同步目标或临时路径 | 否，已被 `.gitignore` 忽略 |
+| `sync-targets.example.json` | 配置示例 | 是 |
+
+配置示例：
+
+```json
+{
+  "targets": [
+    {
+      "name": "示例编辑器全局规则",
+      "mode": "codex_rules",
+      "source": "rules/global-rules.md",
+      "target": "${HOME}/.example-ai/AGENTS.md",
+      "target_env": "SKY_RULES_EXAMPLE_RULES_FILE",
+      "detect": "${HOME}/.example-ai"
+    },
+    {
+      "name": "示例编辑器工作流",
+      "mode": "mirror",
+      "source": "workflows",
+      "target": "${HOME}/.example-ai/workflows",
+      "target_env": "SKY_RULES_EXAMPLE_WORKFLOWS_DIR",
+      "detect": "${HOME}/.example-ai",
+      "pattern": "*.md"
+    }
+  ]
+}
+```
+
+字段说明：
+
+| 字段 | 说明 |
+|------|------|
+| `name` | 体检和同步输出中展示的目标名称 |
+| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`codex_rules` 生成去除 frontmatter 的规则文件、`agents_skills` 由工作流生成 Skill |
+| `source` | 源文件或源目录，默认相对 `sky-rules` 仓库根目录 |
+| `target` | 默认目标路径，支持 `${ROOT}`、`${HOME}`、`~` 和系统环境变量 |
+| `target_env` | 精确覆盖目标路径的环境变量名 |
+| `detect` | 工具检测目录；不存在且未配置环境变量时，默认同步会跳过该目标 |
+| `pattern` | `mirror` / `agents_skills` 使用的文件匹配规则，默认 `*.md` |
+
+新增后先运行：
+
+```powershell
+python sync-workflows.py --doctor
+```
+
+确认新增目标显示正常，再执行同步。
 
 ## 维护说明
 

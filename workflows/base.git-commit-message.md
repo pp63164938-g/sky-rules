@@ -220,7 +220,7 @@ description: 严格根据 git-commit-plugin 风格生成 commit 信息并提交�
 
 当用户要求对 `sky-rules` 提交推送时：
 
-- 工作目录必须切换到 `D:/self/Ai/sky-rules`
+- 工作目录必须切换到已确认的 `sky-rules` 仓库根目录，禁止写死某台电脑的本地路径
 - commit message 仍必须严格遵循本工作流的 `Emoji + Type + Scope + Subject` 格式
 - 只允许暂存 `rules/`、`workflows/`、`skills/`、同步脚本等与规则仓库相关的变更
 - 提交前必须输出将要提交的文件列表

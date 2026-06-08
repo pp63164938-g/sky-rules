@@ -76,14 +76,18 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 告知用户：加在了哪个文件的哪个章节
 - 如果涉及多个文件（如全局 + 项目都需要改），一次性说明
 - **用户确认后的自动同步**：当用户在预览后回复“可以”、“确认”、“更新”、“执行”等明确同意语义时，必须完成实际写入，并立即执行：
-  `python D:/self/Ai/sky-rules/sync-workflows.py --no-git`
-- 同步命令必须使用 Git Bash 可直接执行的正斜杠路径格式，不要输出 Windows 反斜杠路径
+  在已确认的 `sky-rules` 仓库根目录执行 `python sync-workflows.py --no-git`
+- 如果需要输出完整命令，必须基于当前电脑上已确认的仓库实际路径生成；Git Bash 使用正斜杠路径格式，禁止写死某台电脑的本地路径
+- 如果当前电脑的 Gemini / Windsurf / Codex / Agents 目录与默认约定不同，必须通过 `SKY_RULES_*` 环境变量覆盖同步目标，禁止直接修改同步脚本里的目标路径
+- 在新电脑或目录不确定时，必须先执行 `python sync-workflows.py --doctor` 体检 Codex / Antigravity / Windsurf / Agents 的实际写入路径和可写状态，再执行同步
+- 如果 `--doctor` 显示某个未使用工具目标为 `SKIP`，属于正常结果；默认同步会跳过该目标，禁止为了没用的工具强行创建目录
+- 后续扩展其他编辑器同步目标时，优先通过 `sync-targets.json` 增加团队共享目标；仅当前电脑私有的目标写入 `sync-targets.local.json`，禁止为了新增编辑器直接改 Python 同步逻辑
 - **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
   - 全局规则：同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
   - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
   - Skills：由 workflows 生成到 Agents/Codex `~/.agents/skills/`
 - **同步后的提交确认**：规则写入、同步完成并输出同步结果后，必须询问用户是否需要提交并推送 `sky-rules` 仓库本次变更。
-- 如果用户确认提交/推送，则按 `base-git-commit-message` 的提交信息规范，对 `D:/self/Ai/sky-rules` 仓库生成 commit message，并执行：
+- 如果用户确认提交/推送，则按 `base-git-commit-message` 的提交信息规范，对已确认的 `sky-rules` 仓库生成 commit message，并执行：
   1. `git status --short --branch`
   2. `git diff --cached` / `git diff` 核对变更
   3. 仅暂存本次规则相关源文件
