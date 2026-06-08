@@ -9,6 +9,36 @@ alwaysApply: true
 深度分析：立足于第一性原理（First Principles Thinking）剖析问题，并善用工具以提升效率。
 事实为本：以事实为最高准则。若有任何谬误，恳请坦率斧正，助我精进。
 
+# 规则读取策略 / 场景索引
+
+**核心原则**：先抓硬性红线，再按任务场景读取细则。不要把整份规则当成平均权重文本处理，避免长上下文下漏读关键约束。
+
+## P0 硬性红线
+
+- 禁止脑补接口、字段、Query 参数、枚举值、下拉数据源、权限标识、模块导入路径。
+- 禁止擅自 `git add`、`git commit`、`git push`、取消暂存或重置用户变更。
+- 禁止顺手优化、重构、清理老代码；只做用户明确要求的变更。
+- 禁止把未确认内容静默写成确定逻辑；必须标记 TODO 或先问用户。
+- 禁止在联调阶段遗留静态开发占位；当前联调范围内必须处理或改成待确认标记。
+
+## 场景索引
+
+| 场景 | 优先读取 |
+| --- | --- |
+| 接口查询 / 文档确认 | `base-docs`、`联调开发规范` |
+| 前后端联调 / Mock 替换 | `base-debugging`、`静态接口开发规范`、`联调开发规范` |
+| Kunlun 页面生成 | `kl-gen-page`、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
+| 菜单与权限管理 | `kl-menu-manage`、`Git 操作规范` |
+| i18n 翻译 | `i18n 翻译规范`、`i18n 文件扩展规范（通用）` |
+| 样式 / UI 还原 | `CSS/SCSS 样式规范`、`UI 与设计图还原规范` |
+| 提交 / 推送 | `Git 操作规范`、`base-git-commit-message` |
+
+## 示例编写要求
+
+- 示例必须抽象化，只保留能说明规则的最小结构，禁止直接复制真实业务代码、真实接口路径、真实权限标识、真实客户 / 供应商 / 金额等生产信息。
+- 示例命名优先使用 `xxx`、`业务字段`、`业务状态`、`getXxxList`、`TODO用途描述` 等抽象表达；只有固定项目约定才保留真实名称并说明其为项目约定。
+- 能用短反例 / 正例说明的问题，不贴完整组件、完整接口或完整弹窗，避免示例噪音稀释规则重点。
+
 # 开发工作流
 
 渐进式开发：通过多轮对话迭代，明确并实现需求。在着手任何设计或编码工作前，必须完成前期调研并厘清所有疑点。
@@ -55,6 +85,10 @@ alwaysApply: true
 
 **核心原则**：**严禁自行发散新增任何代码结构**。用户未明确指定的内容，一律不得自行生成。
 
+**适用场景**：新增字段、搜索项、表格列、接口参数、下拉数据源、权限标识、路由参数、详情模块、弹窗入口等所有会扩大需求范围的变更。
+
+**硬性红线**：没有用户明确要求、接口文档、抓包、项目已有真实代码或后端确认时，不得把推断写成确定代码；必须先问、保留可感知占位，或使用可搜索 TODO 标记。
+
 ## 禁止静默发散规范
 
 **核心原则**：AI 不得将自行推断、补全、兼容、扩展出来的内容，静默写成确定代码。只要不是用户明确要求、接口文档明确说明、项目已有代码可证明、或后端明确确认的内容，都属于发散。发散可以作为临时方案，但必须主动通知用户，不能只依赖用户自己从代码 diff 中发现。
@@ -69,9 +103,11 @@ alwaysApply: true
 6. **最终交付必须交代**：本次如果存在发散点，最终回复必须单独列出“发散点”；如果没有，也应说明“无额外发散”。
 7. **字段存在不等于能力确认**：需求、截图、接口路径或响应字段只确认了“字段名 / 展示位置”时，只能按已确认部分实现；查询入参、响应场景、字段类型、控件单选/多选、提交结构、枚举值、数据源返回结构等未明确部分，仍然视为未确认。禁止从同页相似字段、历史页面写法或组件惯用写法推断成确定逻辑。
 8. **属性级待确认也必须标记**：同一个业务字段可以“字段名已确认，但类型/入参/控件形态未确认”。已确认部分正常实现，未确认部分必须用 `TODO待联调_用途描述` / `TODO无此联调字段_用途描述` 标记，或在动手前反馈用户确认；禁止因为字段名看起来合理就把整条链路写成确定代码。
-9. **缺失数据源不得硬凑**：当需求需要下拉、弹窗、筛选项、详情模块等功能，但接口文档、抓包、后端确认或项目已有真实接口中没有对应数据源时，禁止拿相似页面、分页接口、列表接口或名称相近接口硬凑成确定功能。例如没有“考核模板下拉接口”时，禁止用“评估模板分页查询”包装成 `templateIdOptions`。
-10. **缺失接口时保留用户可感知入口**：需求明确存在的页面入口、搜索项、按钮、页签、表格列、弹窗区域，在接口未提供或未联调确认时，禁止直接删除让功能从页面消失。应保留入口或区域，并使用禁用态、空状态、提示文案、tips 或占位组件让用户感知“当前缺少接口 / 字段，暂不可用”，同时在代码中保留 `TODO无此联调字段_用途描述`。
-11. **联调前发散必须前置告知**：凡是需要临时替代接口、临时禁用入口、临时使用空 Options、临时展示占位、临时保留 TODO 的，必须在动手前或最终回复中明确告知用户：位置、临时处理内容、依据、影响范围、待确认事项。禁止只让用户从 diff 或代码注释里反查。
+9. **待确认字段禁止伪正式命名**：字段名、查询入参、提交参数、响应字段、下拉数据源等只要未被接口文档、抓包、项目已有真实代码或后端确认，禁止使用推测出来的“正式字段名”作为对象属性或接口参数，再仅靠注释写 `TODO待联调_`。这种写法会让后续维护者误以为字段已联调确认。必须把待确认标记写进属性名 / 参数名本身，例如 `TODO待联调_业务筛选参数`，并且在提交或查询前剔除；如果该字段必须参与接口请求，则必须先确认真实字段名。
+10. **缺失数据源不得硬凑**：当需求需要下拉、弹窗、筛选项、详情模块等功能，但接口文档、抓包、后端确认或项目已有真实接口中没有对应数据源时，禁止拿相似页面、分页接口、列表接口或名称相近接口硬凑成确定功能。例如没有“业务下拉接口”时，禁止用“业务列表分页接口”包装成 `xxxOptions`。
+11. **缺失接口时保留用户可感知入口与需求控件形态**：需求明确存在的页面入口、搜索项、按钮、页签、表格列、弹窗区域，或已明确为下拉、单选、多选、上传等控件形态的字段，在接口未提供或未联调确认时，禁止直接删除让功能从页面消失，也禁止擅自改成输入框、只读文本、普通展示等其他控件形态。应保留原需求确认的入口或控件形态，并使用禁用态、空状态、空 options、提示文案、tips 或占位组件让用户感知“当前缺少接口 / 字段，暂不可用”，同时在代码中保留 `TODO无此联调字段_用途描述`。例如需求明确是“业务对象下拉”，但缺少下拉接口时，应保留禁用下拉或空 options 下拉并标记缺口，禁止改成文本输入框，也禁止用业务分页接口硬凑 options。
+12. **需求存在但接口缺失必须预留，禁止改功能**：只要需求、原型、截图或用户确认中明确存在某个功能、入口、字段、控件、表格列、弹窗区域、计算结果或数据来源，即使接口文档暂未提供，也必须按原需求保留预留位、目标 API 调用位置、API 文件 mock / 占位或可感知缺口提示。禁止因为“没有接口 / 没有字段 / 没有数据源”就删除入口、隐藏字段、改变控件形态、改变路由参数、改用列表行快照、改成本地计算、改成相似接口、改成手填输入，或把原本依赖接口的功能改成另一套实现。缺失内容应标记 `TODO无此联调字段_用途描述` 并反馈待提供接口；静态阶段需要展示数据时，只能在 API 文件按目标接口契约 mock，不得改组件功能链路。
+13. **联调前发散必须前置告知**：凡是需要临时替代接口、临时禁用入口、临时使用空 Options、临时展示占位、临时保留 TODO 的，必须在动手前或最终回复中明确告知用户：位置、临时处理内容、依据、影响范围、待确认事项。禁止只让用户从 diff 或代码注释里反查。
 
 **通知格式**：
 
@@ -97,7 +133,7 @@ alwaysApply: true
 - **搜索项**：禁止自行新增搜索栏的筛选项
 - **表格列**：禁止自行新增列配置、合并列插槽
 - **接口参数**：禁止自行新增接口请求参数
-- **接口 URL / Query 参数**：禁止自行编造 API 的 URL 路径或 Query 参数名。必须基于用户提供的浏览器抓包、接口文档或项目已有代码中的真实请求，严禁凭合理猜测拼出不存在的参数（如将 `sortType=0` 猜成 `listType=new`）
+- **接口 URL / Query 参数**：禁止自行编造 API 的 URL 路径或 Query 参数名。必须基于用户提供的浏览器抓包、接口文档或项目已有代码中的真实请求，严禁凭合理猜测拼出不存在的参数（如把文档里的 `queryType` 猜成 `listType`）
 - **下拉数据源**：禁止自行新增下拉选项的数据源定义
 - **模块导入路径**：禁止主观猜测无把握的模块导入路径（如 `import request from '@/utils/request'`）。对于基建工具类引入，必须参考同项目中现有代码的引用方式。
 
@@ -111,20 +147,24 @@ alwaysApply: true
 **反面案例**：
 
 ```
-用户：客户状态，使用这个接口 customerSelectCustomerCategory
-正确：替换客户状态下拉的数据源为该接口
-错误：自行新增一个"客户类别"搜索项 + 表单字段 + 数据源（用户从未说要加新字段）
+用户：业务状态，使用 `getXxxStatusOptions` 接口
+正确：只替换已有业务状态下拉的数据源
+错误：自行新增“业务类型”搜索项 + 表单字段 + 数据源
 ```
 
 ```
 用户：帮我写一个拉取帖子列表的功能
 正确：先让用户提供浏览器抓包或接口文档，按真实参数编写
-错误：自行编造 listType=new 等不存在的 Query 参数（实际应为 sortType=0）
+错误：自行编造文档不存在的 Query 参数
 ```
 
 # 禁止擅自优化老代码
 
 **核心原则**：拓展功能时，**严禁顺手优化或重写已有代码**。只做用户要求的变更，不改动老代码的写法。
+
+**适用场景**：在已有页面、组件、API、样式、判断分支旁边新增或替换功能时。
+
+**硬性红线**：禁止为了风格统一、代码更好看、减少行数、顺手清理而改动用户未要求的老代码；替换功能必须保留原逻辑注释。
 
 **禁止行为**：
 
@@ -205,6 +245,10 @@ alwaysApply: true
 # 组件 / 函数 / Hook 使用前查证规范
 
 **核心原则**：使用任何非当前文件内定义的组件、函数、Hook、工具方法时，禁止按原生组件、个人经验或其他页面用法盲目推断。必须先查源码、类型定义、文档或项目已有用法，并以源码/类型定义为最终依据，确认可用参数、合法值、默认值、返回值和副作用后再编写配置。
+
+**适用场景**：首次使用或首次传入不熟悉参数的项目组件、业务函数、Hook、工具方法、UI 库二次封装。
+
+**硬性红线**：其他页面用法只能作为线索，不能替代源码 / 类型定义确认；查不到定义或合法值时，必须暂停确认，不能靠经验补配置。
 
 **适用范围**：
 
@@ -302,6 +346,10 @@ function getSendRelationTagClass(emailItem) {
 
 **核心原则**：当页面或弹窗内部出现复杂、重复、可独立理解的业务区域时，必须先判断是否拆成页面专属业务子组件，禁止先把所有结构直接堆进主文件，后续再被动补救。
 
+**适用场景**：复杂弹窗、详情页局部模块、动态表格、独立选择器、重复业务块、页面专属组件目录化。
+
+**硬性红线**：禁止为了减少行数强行拆组件；禁止只有单个入口文件却升级成目录；拆分后边界不清、需要大量透传状态时应回到当前文件。
+
 **必须优先考虑拆分的场景**：
 
 - 同一页面 / 弹窗内出现 2 处及以上结构相似、交互相似的业务块
@@ -337,6 +385,10 @@ dialog-update/
 # TypeScript 类型问题处理规范
 
 **核心原则**：类型报错必须优先回到真实数据结构、函数签名、组件泛型和业务边界上解决，禁止为了“让 TS 不报错”而新增无业务语义的包装函数、运行时判型、类型断言或兜底转换。
+
+**适用场景**：接口类型、组件 props / emits、Hook 返回值、扩展字段、可选字段、泛型约束导致的类型不匹配。
+
+**硬性红线**：禁止用 `as any`、无依据断言、空值兜底、无业务语义包装函数掩盖真实类型问题；应优先修正源头类型或业务边界。
 
 **禁止行为**：
 
@@ -403,6 +455,10 @@ function getTagClass(item: TagItem): TagClassValue {
 
 **核心原则**：
 
+**适用场景**：业务样式、BEM 结构、UnoCSS 与 SCSS 取舍、组件默认样式覆盖、设计稿还原、状态变体、公共样式复用。
+
+**硬性红线**：禁止 `&__` / `&--` 简写；禁止无业务注释堆样式；禁止无明确设计依据覆盖基础组件默认样式；禁止把有业务语义的复杂结构强行堆成大量 UnoCSS 原子类。
+
 1. 禁止使用 `&__` 嵌套简写，必须书写完整的选择器路径
 2. 禁止使用 `&--` 嵌套简写，必须书写完整的选择器路径（即便在嵌套结构中）
 3. **结构嵌套反映 HTML 层级**：子元素样式必须嵌套到父元素内部。所谓“完整选择器路径”是指禁止使用 `&__xxx` / `&--xxx` 简写，而不是要求所有 BEM 类平铺到同一层；只要 HTML 存在父子结构，SCSS 中就必须按父子层级嵌套，并在嵌套内继续书写完整类名。
@@ -412,24 +468,24 @@ function getTagClass(item: TagItem): TagClassValue {
    - **语义化要求**：严禁在样式中留下推导过程或废话参数（如 `/* 匹配 Figma 18px */`、`/* 还原倾斜感 */`）。注释必须清晰说明“这是什么业务模块”（如 `/* 进度条金额大号字体 */`、`/* 强调引流链接 */`）。
    - **强制全覆盖要求**：绝不允许为了偷懒只给最外层顶层容器写注释！在拆解组件或还原 Figma 样式时，**必须为每一个独立定义的子元素样式块（例如所有 BEM 的 `__header`、`__label`、`__val`、`__num`、`__unit` 等）全部加上对应业务说明的注释**。严禁在没有任何注释的情况下连续堆砌子元素样式类。
    - **注释放置位置要求**：说明“这个选择器 / 样式块是什么业务模块”的注释，必须放在选择器外部并紧贴选择器上一行；如果选择器在父级内嵌套，则注释放在父级内部、子选择器外部。只有解释某一条具体 CSS 声明为什么这样写时，才放在样式块内部并紧贴对应声明。
-   - **禁止把块级业务注释放进样式声明内部**：例如 `/* 供应商评分调整任务列表标题 */` 这类说明整个 `.xxx__title` 样式块含义的注释，禁止写在 `{}` 内部第一行，应写在 `.xxx__title` 上方，避免注释和具体声明层级混淆。
+   - **禁止把块级业务注释放进样式声明内部**：例如 `/* 业务模块标题 */` 这类说明整个 `.xxx__title` 样式块含义的注释，禁止写在 `{}` 内部第一行，应写在 `.xxx__title` 上方，避免注释和具体声明层级混淆。
 
 ```scss
-/* 供应商评分调整任务列表标题 */
-.score-adjust-task-table__title {
+/* 业务模块标题 */
+.business-section__title {
     font-size: 14px;
     line-height: 22px;
     color: #222;
 }
 
-.score-adjust-task-table {
-    /* 供应商评分调整提示图标 */
-    .score-adjust-task-table__notice-icon {
+.business-section {
+    /* 业务提示图标 */
+    .business-section__notice-icon {
         flex-shrink: 0;
         font-size: 14px;
     }
 
-    .score-adjust-task-table__header {
+    .business-section__header {
         display: flex;
         align-items: center;
         /* 右侧操作按钮固定贴边，避免标题过长时挤压 */
@@ -539,95 +595,38 @@ function getTagClass(item: TagItem): TagClassValue {
 **代码示例**：
 
 ```scss
-// ❌ 禁止 - 使用 &__ 简写
+// ❌ 禁止：&__ 简写、父子结构平铺
 .card {
-  &__title {
-    font-size: 16px;
-  }
+    &__title {}
 }
+.card__header {}
+.card__title {}
 
-// ❌ 不推荐 - 有父子关系却平铺
-.card__header {
-  margin-bottom: 20px;
-}
-.card__title {
-  font-size: 16px;
-} // title 是 header 的子元素，应嵌套
-
-// ✅ 推荐 - 结构嵌套反映 HTML 层级
+// ✅ 正确：完整类名 + 按 HTML 层级嵌套
 .card {
-  // 父子关系嵌套
-  .card__header {
-    margin-bottom: 20px;
-
-    .card__title {
-      font-size: 16px;
+    .card__header {
+        .card__title {}
     }
-  }
 
-  // BEM 修饰符必须物理嵌套在基础类内部
-  // 且必须书写全路径选择器，方便全局搜索
-  &.card--disabled {
-    opacity: 0.5;
-  }
-}
-```
-
-**父子结构示例**：
-
-```scss
-// ❌ 错误 - 有父子关系却为了“全路径”平铺
-.wc-ticker__live {
-  display: flex;
-}
-
-.wc-ticker__live-dot {
-  width: 8px;
-}
-
-.wc-ticker__live-title {
-  font-size: 14px;
-}
-
-// ✅ 正确 - 按 HTML 父子关系嵌套，同时保留完整类名
-.wc-ticker__live {
-  display: flex;
-
-  .wc-ticker__live-dot {
-    width: 8px;
-  }
-
-  .wc-ticker__live-title {
-    font-size: 14px;
-  }
+    &.card--disabled {}
 }
 ```
 
 **`:deep()` 结构示例**：
 
 ```scss
-// ❌ 错误 - 子组件内部节点全部平铺成同级 deep 选择器
+// ❌ 禁止：子组件内部节点全部平铺
 .page-card {
-  :deep(.custom-select .van-field__value) {
-    height: 100%;
-  }
-
-  :deep(.custom-select .van-field__body) {
-    align-items: center;
-  }
+    :deep(.custom-select .inner-value) {}
+    :deep(.custom-select .inner-body) {}
 }
 
-// ✅ 正确 - 先命中子组件根节点，再按内部 DOM 层级嵌套
+// ✅ 正确：先命中子组件根节点，再按内部层级嵌套
 .page-card {
-  :deep(.custom-select) {
-    .van-field__value {
-      height: 100%;
+    :deep(.custom-select) {
+        .inner-value {}
+        .inner-body {}
     }
-
-    .van-field__body {
-      align-items: center;
-    }
-  }
 }
 ```
 
@@ -665,6 +664,10 @@ this.$router.push({ name: "search", query: { keyword: "test" } });
 
 **核心原则**：枚举展示和枚举判断必须避免三元表达式、散落硬编码和重复数据源。优先判断当前模块是否已经存在下拉 Options；有下拉时复用下拉数据源，没有下拉时再使用映射对象（Map/Object）作为唯一数据源。
 
+**适用场景**：接口状态、类型、模式、错误码、业务枚举、按钮状态、样式状态、下拉展示、提交值和条件分支判断。
+
+**硬性红线**：禁止用三元表达式承载业务枚举；禁止重复维护 options 与 map；接口真实值不确定时必须用 `TODO待联调_值_用途描述` 或先确认。
+
 **有下拉 Options 的展示场景**：当枚举值已经以 `CommonEnum` / `xxxOptions` 形式存在时，展示 label 必须优先复用该 options 数据源，禁止为了展示再维护一份内容完全相同的映射对象。
 
 ```javascript
@@ -692,7 +695,7 @@ const businessTypeLabel = businessTypeOptions.find(businessTypeOption => busines
 - 若需求只提供中文枚举展示值、没有提供接口 id/code，应先区分用途：
   - 仅用于纯展示，或需求 / 接口文档明确说明提交值就是中文枚举值时，才允许 `options.value` 暂用中文枚举值本身。
   - 只要该值会参与业务判断、状态分支、禁用规则、按钮显隐、接口参数分支、组件 `active-value/inactive-value` 等逻辑，禁止直接使用“启用 / 禁用 / 系统计算”等中文展示文案作为判断值或提交值。
-  - 接口真实值不确定时，必须使用 `TODO待联调_值_用途描述` 占位，把“值”紧跟在 `TODO待联调_` 后面，明确这是给接口 id/code/value 预留的值，而不是字段名或展示文案。禁止写成 `TODO待联调_用途描述值` 这种把“值”放在末尾的形式。例如：`TODO待联调_值_启用状态启用` / `TODO待联调_值_适用供应商状态供应矩阵合作中`。
+  - 接口真实值不确定时，必须使用 `TODO待联调_值_用途描述` 占位，把“值”紧跟在 `TODO待联调_` 后面，明确这是给接口 id/code/value 预留的值，而不是字段名或展示文案。禁止写成 `TODO待联调_用途描述值` 这种把“值”放在末尾的形式。例如：`TODO待联调_值_业务状态启用` / `TODO待联调_值_业务类型目标项`。
 - 只读场景如果必须使用输入框展示，也不能直接展示原始硬编码文本，应由枚举 Options 派生展示值。
 - 禁止为每个枚举项机械拆分值常量。只有枚举值会被多处业务判断、接口分支、禁用规则或跨文件复用时，才单独抽值常量；仅用于 options 展示/提交时，直接在 options 中维护 `label/value`。
 - 新增默认值优先从 options 中取值，例如 `xxxOptions[0].value`；如果默认项不是第一项或有明确业务名称，再单独声明“默认值”常量，不要把所有枚举项都拆成常量。
@@ -707,32 +710,15 @@ const businessTypeLabel = businessTypeOptions.find(businessTypeOption => busines
 **无下拉 Options 的展示场景**：当当前模块没有现成下拉 options，或该映射本身就是稳定业务常量时，使用映射对象统一维护 value → label。
 
 ```javascript
-// ❌ 禁止 - 三元嵌套超过2个
-const statusText =
-  status === 1
-    ? "待审核"
-    : status === 2
-      ? "已通过"
-      : status === 3
-        ? "已拒绝"
-        : "未知";
+// ❌ 禁止：业务枚举用多层三元
+const statusText = status === 1 ? '状态A' : status === 2 ? '状态B' : '未知'
 
-// ✅ 推荐 - 使用映射对象
+// ✅ 正确：使用唯一映射数据源
 const STATUS_MAP = {
-  1: "待审核",
-  2: "已通过",
-  3: "已拒绝",
-};
-const statusText = STATUS_MAP[status] || "未知";
-
-// ✅ 推荐 - 无现成 productTypeOptions 时，使用类型→标签映射
-const PRODUCT_LABEL_MAP = {
-  1: "短信/语音",
-  2: "PWA",
-  3: "短信",
-  4: "语音",
-};
-const productLabel = PRODUCT_LABEL_MAP[productType] || "未知";
+    1: '状态A',
+    2: '状态B'
+}
+const statusText = STATUS_MAP[status] || '未知'
 ```
 
 **多类型条件判断**：当多个类型共享相同逻辑时，使用常量集合 + `includes` 判断：
@@ -766,25 +752,25 @@ v-if="SMS_VOICE_PRODUCT_TYPES.includes(rule.productType)"
 **核心原则**：当条件字段是枚举类型时，必须显式判断每个已知枚举值，禁止只判断其中一个值，再把剩余情况默认当作另一个枚举值处理，除非该默认分支确实是业务兜底并写明原因。
 
 ```javascript
-// ❌ 禁止 - 只判断供应商，剩余情况默认当作客户
-if (targetType === TARGET_TYPE_SUPPLIER) {
-    return getSupplierStaffOptions()
+// ❌ 禁止：只判断 A，剩余情况默认当 B
+if (targetType === TARGET_TYPE_A) {
+    return getAOptions()
 }
 
-return getCustomerStaffOptions()
+return getBOptions()
 
-// ✅ 正确 - 客户、供应商都显式判断，未知类型单独处理
-if (targetType === TARGET_TYPE_SUPPLIER) {
-    // 供应商业务员来自 SRM，按供应商编码集合查询
-    return getSupplierStaffOptions()
+// ✅ 正确：已知枚举逐个判断，未知类型单独处理
+if (targetType === TARGET_TYPE_A) {
+    // 类型 A 使用 A 数据源
+    return getAOptions()
 }
 
-if (targetType === TARGET_TYPE_CUSTOMER) {
-    // 客户业务员来自 CRM，按品牌和客户编码集合查询
-    return getCustomerStaffOptions()
+if (targetType === TARGET_TYPE_B) {
+    // 类型 B 使用 B 数据源
+    return getBOptions()
 }
 
-// 未识别的邀约对象类型，避免未来新增类型时误走客户逻辑
+// 未识别类型，避免未来新增枚举时误走旧逻辑
 return []
 ```
 
@@ -798,6 +784,10 @@ return []
 # 条件分支编写规范
 
 **核心原则**：优先使用扁平的 `if → return` 提前退出风格，避免 `if-else` / `if-elseif-else` 链式嵌套。
+
+**适用场景**：业务状态判断、接口选择、权限 / 按钮显隐、异常兜底、提交前校验、枚举分支。
+
+**硬性红线**：能明确判断的业务枚举必须逐个显式判断；禁止把“剩余情况”默认等同于某个具体业务类型。
 
 **目的**：减少嵌套层级，提高可读性，新增分支时只需在末尾 `return` 前插入新的 `if` 块。
 
@@ -837,6 +827,27 @@ function getFilteredItems(type, items) {
 ## 明确分支优先规范
 
 **核心原则**：当业务条件可以明确判断时，必须显式写出对应分支，禁止为了省代码量用默认分支吞掉其他可明确判断的场景。兜底分支只用于未知、异常、兼容历史脏数据等确实无法提前枚举的情况。
+
+**正向精准判断优先**：
+
+- 当业务规则命中的是某几个明确枚举值 / 状态值时，必须正向列出这些值，例如 `A || B` 或常量集合 `includes(A, B)`；禁止用 `value !== X`、`!isXxx`、“非 A” 等取反方式，把剩余值偷懒归为同一业务场景。
+- 只有业务本身明确是“排除某类后的全部剩余情况”，或需求 / 接口文档明确写明“除 X 外均按 Y 处理”时，才允许使用取反判断；代码附近必须写明依据和影响范围。
+- 枚举值未确认时，禁止通过反向判断绕过缺失枚举；必须先确认真实 value，或用 `TODO待联调_值_用途描述` 标记后再做正向判断。
+- 多个明确类型共享同一逻辑时，优先使用有业务语义的常量集合表达命中范围；后续新增枚举时只扩展集合，禁止让新增枚举自动落入旧的取反逻辑。
+
+```javascript
+// ❌ 禁止 - 用“非 C”偷懒覆盖 A/B，未来新增 D 会误入旧逻辑
+function isTargetScene(type) {
+    return type !== TYPE_C
+}
+
+// ✅ 正确 - 正向列出当前确认命中的业务类型
+const TARGET_SCENE_TYPES = [TYPE_A, TYPE_B]
+
+function isTargetScene(type) {
+    return TARGET_SCENE_TYPES.includes(type)
+}
+```
 
 ```javascript
 // ❌ 禁止 - 只写一个明确分支，其余全部默认处理
@@ -972,6 +983,10 @@ const latestStatus = latestRoundRecord?.actionTypeName
 
 **核心原则**：禁止为了“看起来结构化”而把简单表达式、单行字符串拼接、单次使用且无业务语义的逻辑强行抽成函数。函数抽象必须带来明确收益：复用、隔离复杂逻辑、表达稳定业务概念、封装外部差异或降低主流程认知成本。
 
+**适用场景**：页面方法、事件处理、参数组装、接口调用包装、工具函数、常量抽离、公共函数复用。
+
+**硬性红线**：禁止套壳函数、无业务语义二次包装、单次简单表达式抽函数；抽象必须让调用处更清晰或减少真实重复。
+
 **禁止行为**：
 
 - 单行表达式只使用一次，却额外抽函数
@@ -983,6 +998,27 @@ const latestStatus = latestRoundRecord?.actionTypeName
 - 禁止在抽离公共函数后，再在调用方新增只负责转参、无额外业务语义的二次包装函数。公共函数已经表达稳定业务概念时，调用处应直接调用公共函数；只有调用方需要补充本页面独有的业务分支、兼容逻辑、副作用或能显著降低阅读成本时，才允许保留页面内包装函数。
 - 不要求所有接口状态值、场景值都抽成常量。仅单次使用、判断语义清晰、不会跨文件复用的简单值，可以直接写在判断或参数处；但必须在附近注释写明字段来源、具体值含义和影响范围。只有多处复用、跨文件复用、参与复杂分支，或能形成稳定业务概念时，才抽成常量；抽成顶部常量时必须用 JSDoc 写明来源字段、具体值和用途，禁止只留下无说明的裸常量。
 - 所有常量声明都必须有注释说明业务含义、来源或用途；禁止出现没有任何注释说明的常量。
+
+**简单枚举命中判断不额外封装**：
+
+- 当判断只是“当前值是否等于类型 A / 类型 B”或“列表是否包含类型 A / 类型 B”这类简单枚举命中逻辑时，优先在当前响应式派生、分支或提交逻辑中直接写出判断条件，禁止再封装一层 `isXxxType` / `hasXxxType` / `getXxxVisible` 等函数导致阅读链路变长。
+- 只有判断逻辑被多处复用、条件组合较复杂、需要隔离外部差异、或函数名能表达稳定业务概念时，才允许抽函数。
+- 直接写判断时必须在附近写清楚业务注释，说明命中的具体类型、枚举值来源和对应业务表现，禁止留下无注释的裸枚举判断。
+
+```javascript
+// ❌ 禁止 - 简单类型命中又封装一层，阅读时需要跳转确认函数内部
+function hasTargetType(typeList) {
+    return typeList.includes(TYPE_A) || typeList.includes(TYPE_B)
+}
+
+const visible = computed(() => hasTargetType(form.typeList))
+
+// ✅ 正确 - 直接写出命中的业务类型，并用注释说明业务表现
+const visible = computed(() => {
+    // 类型 A / 类型 B：展示目标字段
+    return form.typeList.includes(TYPE_A) || form.typeList.includes(TYPE_B)
+})
+```
 
 **代码示例**：
 
@@ -1004,42 +1040,30 @@ const row = {
 
 ```javascript
 // ❌ 禁止 - 页面内函数只是给公共函数转参，没有新增业务语义
-function getAddAccountPurchaseFinanceDisabled() {
-    return getPurchaseFinanceDisabled({
-        isPurchase: props.isPurchase,
-        loading: loadingState.finance,
-        hasFinanceFieldValue: hasReturnedPurchaseFinanceFieldValue.value
-    })
+function getBusinessDisabled() {
+    return getXxxDisabled({ businessType, loading, hasValue })
 }
 
-const isPurchaseFinanceDisabled = computed(getAddAccountPurchaseFinanceDisabled)
+const isBusinessDisabled = computed(getBusinessDisabled)
 
 // ✅ 正确 - 直接在响应式派生点调用公共函数
-const isPurchaseFinanceDisabled = computed(() =>
-    getPurchaseFinanceDisabled({
-        isPurchase: props.isPurchase,
-        loading: loadingState.finance,
-        hasFinanceFieldValue: hasReturnedPurchaseFinanceFieldValue.value
-    })
-)
+const isBusinessDisabled = computed(() => getXxxDisabled({ businessType, loading, hasValue }))
 ```
 
 ```javascript
 // ❌ 禁止 - 只是套壳，没有新增任何处理
-function handlePreviewScore(scoreItemList) {
-    return fetchPreviewScore(scoreItemList)
+function handleXxx(dataList) {
+    return fetchXxx(dataList)
 }
 
-handlePreviewScore(scoreItemList)
-
 // ✅ 正确 - 直接调用已有函数
-fetchPreviewScore(scoreItemList)
+fetchXxx(dataList)
 
 // ✅ 可以新增函数 - 后续确实出现本页面独有处理时再抽
-function handlePreviewScore(scoreItemList) {
-    if (!isScoreScene.value) return
+function handleXxx(dataList) {
+    if (!isBusinessScene.value) return
 
-    return fetchPreviewScore(scoreItemList)
+    return fetchXxx(dataList)
 }
 ```
 
@@ -1069,6 +1093,10 @@ function getStaffGroupOptions(staffGroupItem) {
 
 **核心原则**：Hook / Composable 只用于封装具有独立响应式状态、副作用或可复用业务流程的组合式逻辑；禁止为了“文件拆分”把简单表达式、纯工具函数、单次按钮逻辑强行抽成 Hook。
 
+**适用场景**：独立响应式状态、接口请求流程、并发控制、缓存、订阅、表单校验、跨组件复用逻辑。
+
+**硬性红线**：没有响应式状态、副作用、生命周期或复用边界的纯函数，不应抽成 Hook；不能只为减少主文件行数拆 Hook。
+
 **适合抽离为 Hook 的场景**：
 
 - 包含独立的 `ref` / `reactive` / `computed` / `watch` / 生命周期，并围绕一个稳定业务概念组织，例如预览得分、远程下拉、表格状态、轮询任务。
@@ -1085,7 +1113,7 @@ function getStaffGroupOptions(staffGroupItem) {
 
 **命名与目录规范**：
 
-- Hook 函数必须使用 `useXxx` 命名，文件名与导出函数保持一致，例如 `useSupplierEvaluationPreviewScore.ts`。
+- Hook 函数必须使用 `useXxx` 命名，文件名与导出函数保持一致，例如 `useXxxPreview.ts`。
 - 页面专属 Hook 放在当前页面或功能目录的 `hooks/` 下；跨页面复用 Hook 才上升到 `src/hooks/`。
 - Hook 文件默认使用 `.ts`；只有确实返回 JSX / TSX 渲染内容时才使用 `.tsx`。
 - 一个 Hook 文件优先只导出一个主 Hook；内部辅助函数保持私有，除非确有复用需求再单独导出。
@@ -1094,32 +1122,29 @@ function getStaffGroupOptions(staffGroupItem) {
 
 ```ts
 // ❌ 禁止 - 只是纯格式化，不应抽 Hook
-export function useScoreFormat() {
-    function formatScore(value?: string | number) {
-        return value === undefined || value === '' ? '-' : `${value}分`
-    }
-
-    return { formatScore }
+export function useXxxFormat() {
+    return { formatXxx }
 }
 
 // ✅ 正确 - 独立业务状态 + 接口请求 + 并发控制，可抽 Hook
-export function useSupplierEvaluationPreviewScore(options) {
-    const previewScoreInfo = ref({})
+export function useXxxPreview(options) {
+    const previewInfo = ref({})
     const requestNo = ref(0)
 
-    async function handleScoreItemsChange(scoreItemList) {
-        // 判断评分完整性、去重、调用预估接口
+    async function handleChange(dataList) {
+        // 校验、去重、并发控制、调用接口
     }
 
-    return {
-        previewScoreInfo,
-        handleScoreItemsChange
-    }
+    return { previewInfo, handleChange }
 }
 ```
 # Vue 响应式派生数据使用规范
 
 **核心原则**：`computed` 只用于真正需要响应式缓存、模板自动更新或多处响应式消费的派生数据；不要把一次性计算、事件处理内的临时转换、带参数转换逻辑都写成 `computed`。
+
+**适用场景**：模板展示、禁用状态、列表渲染、多处响应式消费、事件处理中的临时转换。
+
+**硬性红线**：点击、提交、生成、预览等一次性流程不要为了取一次值维护 `computed`；`computed` 内禁止副作用。
 
 **禁止行为**：
 
@@ -1186,6 +1211,8 @@ allSettlements.map((settlementItem, index) => {
 
 适用场景：后端未提供接口文档时，前端需进行静态开发。
 
+**硬性红线**：静态阶段可以保留可搜索 TODO 和 API 文件 mock，但禁止在组件内联 mock，禁止把未确认字段伪装成正式字段；缺接口时只允许在 API 文件中按目标接口契约 mock 或占位，禁止改组件功能链路、路由传参、交互形态、本地计算逻辑或提交结构来绕过接口缺失。
+
 开发原则：
 
 - **组件代码**：正常调用接口，写法与正式接口一致，无需任何改动
@@ -1243,15 +1270,31 @@ TODO无此联调字段_客户创建时间;
 3. `TODO待联调_` 适用于所有无接口文档依据的变更（新增字段、单选改多选、数据源变更等），已有页面中已确定的字段禁止改为 TODO
 4. 表单字段名（`searchForm`/`formData` 的属性名）与提交接口时的参数字段名应保持一致，不要定义两个不同的名字来表示同一个字段
 5. 联调/上线前，全局搜索确保已全部处理
-6. `TODO待联调_` / `TODO无此联调字段_` 不只用于字段名缺失；字段类型、是否数组、是否多选、查询参数是否支持、详情响应是否返回、下拉数据源返回结构、枚举真实值等任一关键属性未确认时，也必须标记或反馈确认，方便后续全局搜索定位。
-7. **联调阶段禁止遗留 `TODO待联调_`**：`TODO待联调_` 只表示静态开发阶段的待确认占位。进入联调后，当前联调范围内所有 `TODO待联调_` 必须逐项处理：接口文档、抓包或后端已提供真实字段 / 参数 / 枚举值时，必须替换为真实名称；仍未提供但业务需要时，必须改为 `TODO无此联调字段_用途描述` 并在最终回复中列为待确认项。禁止把 `TODO待联调_` 原样保留到联调交付结果中。
-8. **联调确认后清理临时命名**：静态开发 / 未联调阶段允许使用 `form_`、`table_`、`mock`、`temp`、`TODO待联调_` 等临时命名预留，但这些命名必须让后续能搜索定位，不能伪装成正式字段。进入联调后，接口字段、枚举、Options、Dispatch、表单项等已经通过接口文档、抓包或后端确认时，必须替换为真实接口字段名或接口字段链路命名，例如 `status` 对应 `statusOptions`，`templateId` 对应 `templateIdOptions` / `templateIdOptionsDispatch`。仅在确实仍缺字段、缺类型、缺枚举值或缺数据源时，才允许保留 `TODO无此联调字段_用途描述` 这类可搜索标记。
-9. **缺接口入口必须可感知预留**：需求明确存在的搜索项、按钮、页签、表格列、弹窗区域等，如果缺少接口或数据源，不能直接删除。应保留禁用态、空状态、提示文案、tips 或占位组件，并使用 `TODO无此联调字段_用途描述` 标记缺口，最终回复同步列出待提供内容。
-10. **下拉数据源未确认不得硬凑**：下拉 / 远程搜索 Options 必须有接口文档、抓包、后端确认或项目真实接口依据。没有对应下拉接口时，禁止用分页接口、列表接口、相似页面接口临时包装为 Options；应保留可感知占位并反馈待提供下拉接口和返回结构。
+6. `TODO待联调_` / `TODO无此联调字段_` 不只用于字段名缺失；字段类型、查询参数、响应场景、下拉数据源、枚举真实值等关键属性未确认时也必须标记或反馈确认。
+7. 联调阶段的 TODO 清理、临时命名替换、缺接口入口保留、缺数据源处理，统一按“联调开发规范”的硬性红线执行，避免在多个章节重复维护同一规则。
+8. **待确认字段名必须显式暴露在属性名中**：字段名未确认时，`TODO待联调_` / `TODO无此联调字段_` 必须作为属性名、参数名或绑定字段名的一部分，禁止只写在注释里。仅注释标记会让字段看起来像已联调确认的正式字段。
+
+```javascript
+// ❌ 禁止 - 属性名像正式接口字段，只有注释暴露待确认
+const searchForm = {
+    xxxTypeList: undefined // TODO待联调_业务类型筛选参数
+}
+
+// ✅ 正确 - 待确认状态直接体现在属性名中，避免误认为已联调
+const searchForm = {
+    TODO待联调_业务类型筛选参数: undefined
+}
+
+// 查询前必须剔除未确认字段，禁止提交给接口
+const params = { ...searchForm }
+delete params.TODO待联调_业务类型筛选参数
+```
 
 # 联调开发规范
 
 适用场景：与后端进行接口联调时。
+
+**硬性红线**：联调范围内禁止遗留 `TODO待联调_`；文档缺失字段必须改为 `TODO无此联调字段_用途描述` 并反馈待确认项；字段名必须与接口文档一致；需求已确认但接口缺失时必须预留原功能位置和目标接口链路，禁止通过删除入口、改变交互、改变路由传参、改用其他数据来源、本地计算或相似接口来绕过接口缺失。
 
 接口文档查阅：
 
@@ -1265,6 +1308,31 @@ TODO无此联调字段_客户创建时间;
 - **禁止自行发散字段**：遇到接口文档没有的字段，**禁止**自己发散直接生成字段名
 - **待确认字段用 TODO无此联调字段\_ 标记**：使用 `TODO无此联调字段_用途描述` 格式占位，便于全局搜索和理解
 - **前后端字段名一致**：表单字段名（`formData` 的属性名）必须与接口请求参数的字段名完全一致，禁止前端自定义一套字段名再在提交时映射为另一套。即使后端字段名有拼写错误（如 `amout` 而非 `amount`），前端也必须跟随后端字段名，保持一致。
+
+## 接口与需求结构不一致沟通门禁
+
+**核心原则**：联调时只要发现需求交互、页面结构、提交结构、接口入参、接口响应、字段含义、批量 / 单条语义之间存在不一致、缺失或疑似对不上，必须及时沟通，禁止自行消化成“看起来可用”的实现。
+
+**硬性红线**：
+
+- 禁止在接口文档只支持单条时，自行补成批量提交结构，或在接口文档只支持批量时，自行拆成单条循环。
+- 禁止在接口缺字段、缺结构、缺入口、缺返回值时，用前端本地状态、列表快照、兜底字段、相似字段或自定义字段把页面做成“没有问题”的样子。
+- 禁止把未确认的字段、结构、参数或批量语义写成正式提交参数；即使页面内部需要临时状态，也必须和接口提交结构明确隔离。
+- 禁止联调阶段只在代码里留 TODO，而不向用户说明问题；用户不看 diff 也必须知道当前哪里对不上、影响什么、需要后端或需求确认什么。
+
+**正确处理方式**：
+
+1. 先指出不一致点：说明是需求、接口、交互、字段还是提交结构对不上。
+2. 说明影响范围：影响展示、提交、保存、详情回显、审批流流转还是批量操作。
+3. 保留可感知预留位：页面入口、表格列、表单项、按钮或结果区域不能直接消失；应禁用、空状态、提示或占位。
+4. 代码显式标记：使用 `TODO无此联调字段_用途描述` 或明确的待确认注释，不能伪装成已确认字段。
+5. 等确认后再实现：需要后端补接口、调整字段、确认批量语义或确认降级方案时，必须先沟通，不能自行决定。
+
+**判断标准**：
+
+- 如果用户需要看代码 diff 才知道接口和需求对不上，说明处理错误。
+- 如果页面表现得像已经联调完成，但实际依赖前端自定义字段或本地兜底，说明处理错误。
+- 如果接口文档没有的结构进入了请求体，说明处理错误。
 
 ```javascript
 // ❌ 禁止 - 前端用 amount/reason，提交时映射为 amout/reson，两套名字
@@ -1296,6 +1364,10 @@ const params = { amout: Number(formData.amout), reson: formData.reson };
 # i18n 翻译规范
 
 **核心原则**：**禁止自动生成翻译**，所有未由用户提供的翻译必须使用 `TODO翻译_` 前缀标记。
+
+**适用场景**：新增翻译 key、替换硬编码文案、多语言文件扩展、长文案结构拆分。
+
+**硬性红线**：禁止自行翻译用户未提供的语言；禁止在 i18n 中混入复杂 HTML 或样式；扩展前必须确认实际使用的语言入口文件。
 
 ## 禁止自动生成翻译
 
@@ -1393,6 +1465,10 @@ suffix: '现金'
 # 注释规范
 
 **Vue 组件/弹窗必须包含业务说明注释**：
+
+**适用场景**：Vue 模板结构、业务组件、函数 / 变量 / 类型、条件分支、兜底值、数据转换、复杂 Map / Record / 缓存结构、样式块。
+
+**硬性红线**：注释必须贴近代码并说明业务含义或分支原因；禁止空泛注释、远离代码的规则堆叠、无注释堆复杂结构。
 
 - **格式**：在组件最外层节点内部（如 `<template>` 开头处）或 `export default` 上方，必须添加明确的中文业务名称或功能说明注释。
 - **目的**：保持极高的可读性，让接手人员无需阅读内部实现细节，也能快速明确该组件的业务用途。
@@ -1614,6 +1690,26 @@ isTickerFooterVisible() {
 2. **确认图标库版本**：确保使用的图标在当前版本中可用
 3. **保持一致性**：同类功能使用相同风格的 Icon
 
+## Icon 使用方式查证门禁
+
+**核心原则**：使用或替换 Icon 前，必须先确认当前项目、当前模块的 Icon 使用风格，禁止拿到 SVG 后直接套用某一种写法。
+
+**执行顺序**：
+
+1. 先查同页面 / 同模块 / 同类功能的 Icon 写法，例如 `<local-xxx />`、`svg-icon`、`<img src="...">`、组件库 Icon。
+2. 再查构建或自动导入配置，确认是否存在统一加载机制，例如 `unplugin-icons`、`IconsResolver`、`FileSystemIconLoader`、`svg-sprite-loader`。
+3. 根据当前项目事实选择写法：
+   - 如果项目当前风格是 `<img src="@/assets/icons/xxx.svg">`，允许继续使用 `<img>`。
+   - 如果项目当前风格是 `el-icon + local-*`，应按该方式新增 / 替换。
+   - 如果项目当前风格是 `svg-icon` / Sprite，应按项目约定使用 `svg-icon`。
+4. 最终回复中说明本次 Icon 写法依据，例如“同模块已有 `el-icon + local-*`，且配置了 `FileSystemIconLoader`”。
+
+**禁止行为**：
+
+- 禁止未查项目已有用法，就直接使用 `<img>`、`svg-icon`、`local-*` 或组件库 Icon。
+- 禁止只因为用户提供的是 SVG，就默认用 `<img>`。
+- 禁止套用其他项目的 Icon 习惯。
+
 ## 静态开发临时 Icon 标记
 
 适用场景：静态开发阶段，设计稿中的 Icon 尚未提供或尚未确定时。
@@ -1763,6 +1859,11 @@ volta pin node@20
 # 终端命令执行规范
 
 **终端环境设定**：
+
+**适用场景**：自动化终端命令、复杂管道 / 重定向、API 测试、构建验证、后台命令、Windows 路径输出。
+
+**硬性红线**：复杂命令必须先确认终端语法；API 测试必须加超时；Vite 项目默认不执行 full build；后台命令转异步后必须立即轮询。
+
 即使底层系统被识别为 Windows 并默认调用 PowerShell，在执行自动化终端命令（如 `run_command`）时，**必须优先将默认环境视为 Git Bash**。除了极简单且跨平台的通用命令（如 `npm run dev`），对于所有复杂操作（包含管道、重定向、环境变量传递、特定语法等），**优先使用 `bash -c "你的命令"` 进行包裹执行**，**严禁在未确认终端类型时混用 PowerShell 与 Bash 的语法和转义规则**。
 
 **PowerShell 回退兼容规范**：
@@ -1862,32 +1963,25 @@ curl -s --connect-timeout 10 --max-time 30 -X POST "https://api.example.com/..."
 **代码示例**：
 
 ```typescript
-// ❌ 禁止 - 静默吞噬错误，既不反馈推屏也不推送告警，系统成黑盒
+// ❌ 禁止：静默吞噬错误
 try {
-  await triggerPipeline();
+  await triggerTask()
 } catch (error) {
-  console.error("执行崩溃", error); // 用户点击后页面没反应，也收不到任何失败通知
+  console.error(error)
 }
 
-// ✅ 推荐 [后台调度] - 自动化长驻任务遇到不可恢复异常时，将其推送触达用户
-if (response.status === 401) {
-  const newToken = await autoLoginRefresh();
-  if (!newToken) {
-    // 不仅打印日志，还通过通知链路主动告诉用户“Token已彻底过期，需要人为登录”
-    await notificationManager.notify({
-      status: "TOKEN_EXPIRED",
-      pipelineName: sub.pipelineName,
-    });
-    return;
-  }
+// ✅ 后台任务：转成异常态并通知
+if (response.status === 401 && !newToken) {
+  await notifyOwner({ status: 'TOKEN_EXPIRED' })
+  return
 }
 
-// ✅ 推荐 [前台交互] - 用户在页面上触发的点击请求，必须给予明确失败 UI 反馈
+// ✅ 前台交互：明确提示用户
 try {
-  await api.updateConfig();
-  this.$message.success("更新成功");
+  await api.updateConfig()
+  this.$message.success('更新成功')
 } catch (err) {
-  this.$message.error(err.message || "网络或凭证已失效，更新失败");
+  this.$message.error(err.message || '操作失败')
 }
 ```
 
