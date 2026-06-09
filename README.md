@@ -50,8 +50,10 @@ sky-rules/
 |--------|----------|------|
 | `workflows/*.md` | `~/.codeium/windsurf/global_workflows/` | Windsurf 工作流 |
 | `workflows/*.md` | `~/.gemini/antigravity/global_workflows/` | Antigravity 工作流 |
+| `workflows/*.md` | `~/.codex/skills/` | Codex Skills |
 | `rules/global-rules.md` | `~/.gemini/GEMINI.md` | Antigravity 全局规则 |
 | `rules/global-rules.md` | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 全局规则 |
+| `rules/global-rules.md` | `~/.codex/AGENTS.md` | Codex 全局规则 |
 
 **同步特性：**
 - 使用 Python `shutil` 处理文件复制，兼容中文路径
@@ -60,6 +62,7 @@ sky-rules/
 - 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
 - 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
+- Codex 加载验证：同步后自动检查 `~/.codex/AGENTS.md`、`~/.codex/skills/` 落盘，并通过 `codex-cli debug prompt-input` 验证 Skills 是否进入模型可见上下文
 - 增量同步：比较修改时间，跳过未变更文件
 - 镜像模式：自动删除目标目录中源不存在的文件
 - `sync-to-editors-only.bat` 仅同步文件，不执行任何 Git 操作
@@ -98,7 +101,7 @@ python sync-workflows.py --no-git
 | Antigravity 工作流 | `~/.gemini/antigravity/global_workflows/` |
 | Antigravity/Gemini 全局规则 | `~/.gemini/GEMINI.md` |
 | Codex 全局规则 | `~/.codex/AGENTS.md` |
-| Agents/Codex Skills | `~/.agents/skills/` |
+| Codex Skills | `~/.codex/skills/` |
 
 如果某台电脑的目录不同，不要修改 `sync-workflows.py`，优先配置环境变量：
 
@@ -106,14 +109,15 @@ python sync-workflows.py --no-git
 |----------|------|
 | `SKY_RULES_WINDSURF_HOME` | 覆盖 Windsurf 根目录，默认派生 `global_workflows/` 与 `memories/global_rules.md` |
 | `SKY_RULES_GEMINI_HOME` | 覆盖 Gemini 根目录，默认派生 `antigravity/global_workflows/` 与 `GEMINI.md` |
-| `SKY_RULES_CODEX_HOME` | 覆盖 Codex 根目录，默认派生 `AGENTS.md` |
-| `SKY_RULES_AGENTS_HOME` | 覆盖 Agents 根目录，默认派生 `skills/` |
+| `SKY_RULES_CODEX_HOME` | 覆盖 Codex 根目录，默认派生 `AGENTS.md` 与 `skills/` |
+| `SKY_RULES_AGENTS_HOME` | 兼容早期 Agents 根目录，默认派生 `skills/` |
 | `SKY_RULES_WINDSURF_WORKFLOWS_DIR` | 精确覆盖 Windsurf 工作流目录 |
 | `SKY_RULES_WINDSURF_RULES_FILE` | 精确覆盖 Windsurf 全局规则文件 |
 | `SKY_RULES_GEMINI_WORKFLOWS_DIR` | 精确覆盖 Antigravity 工作流目录 |
 | `SKY_RULES_GEMINI_RULES_FILE` | 精确覆盖 Antigravity/Gemini 全局规则文件 |
 | `SKY_RULES_CODEX_AGENTS_FILE` | 精确覆盖 Codex `AGENTS.md` 文件 |
-| `SKY_RULES_AGENTS_SKILLS_DIR` | 精确覆盖 Agents/Codex Skills 目录 |
+| `SKY_RULES_CODEX_SKILLS_DIR` | 精确覆盖 Codex Skills 目录 |
+| `SKY_RULES_AGENTS_SKILLS_DIR` | 兼容早期 Agents/Codex Skills 目录覆盖 |
 
 兼容优先级：
 

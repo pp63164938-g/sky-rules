@@ -83,10 +83,23 @@ def get_first_env_path(names: list[str], default: Path) -> Path:
     return default
 
 
+def get_codex_skills_dir(default: Path) -> Path:
+    """读取 Codex Skills 目录，兼容早期 Agents 环境变量。"""
+    for name in ["SKY_RULES_CODEX_SKILLS_DIR", "SKY_RULES_AGENTS_SKILLS_DIR"]:
+        value = os.environ.get(name)
+        if value:
+            return resolve_path(value)
+
+    agents_home = os.environ.get("SKY_RULES_AGENTS_HOME")
+    if agents_home:
+        return resolve_path(agents_home) / "skills"
+
+    return default
+
+
 WINDSURF_HOME = get_env_path("SKY_RULES_WINDSURF_HOME", HOME / ".codeium" / "windsurf")
 GEMINI_HOME = get_env_path("SKY_RULES_GEMINI_HOME", HOME / ".gemini")
 CODEX_HOME = get_first_env_path(["SKY_RULES_CODEX_HOME", "CODEX_HOME"], HOME / ".codex")
-AGENTS_HOME = get_env_path("SKY_RULES_AGENTS_HOME", HOME / ".agents")
 
 WINDSURF_WORKFLOWS_DIR = get_env_path(
     "SKY_RULES_WINDSURF_WORKFLOWS_DIR",
@@ -102,7 +115,7 @@ GEMINI_WORKFLOWS_DIR = get_env_path(
 )
 GEMINI_RULES_FILE = get_env_path("SKY_RULES_GEMINI_RULES_FILE", GEMINI_HOME / "GEMINI.md")
 CODEX_AGENTS_FILE = get_env_path("SKY_RULES_CODEX_AGENTS_FILE", CODEX_HOME / "AGENTS.md")
-AGENTS_SKILLS_DIR = get_env_path("SKY_RULES_AGENTS_SKILLS_DIR", AGENTS_HOME / "skills")
+CODEX_SKILLS_DIR = get_codex_skills_dir(CODEX_HOME / "skills")
 
 BUILTIN_SYNC_MAP = [
     {
@@ -153,14 +166,14 @@ BUILTIN_SYNC_MAP = [
         "detect": CODEX_HOME,
     },
     {
-        "name": "Agents/Codex Skills",
+        "name": "Codex Skills",
         "src": SRC_WORKFLOWS,
-        "dst": AGENTS_SKILLS_DIR,
+        "dst": CODEX_SKILLS_DIR,
         "mode": "agents_skills",
         "pattern": "*.md",
-        "exact_env": ["SKY_RULES_AGENTS_SKILLS_DIR"],
-        "base_env": ["SKY_RULES_AGENTS_HOME"],
-        "detect": AGENTS_HOME,
+        "exact_env": ["SKY_RULES_CODEX_SKILLS_DIR", "SKY_RULES_AGENTS_SKILLS_DIR"],
+        "base_env": ["SKY_RULES_CODEX_HOME", "CODEX_HOME", "SKY_RULES_AGENTS_HOME"],
+        "detect": CODEX_HOME,
     },
 ]
 
@@ -326,6 +339,65 @@ def is_generated_sky_workflow_skill(skill_text: str) -> bool:
         SKY_WORKFLOW_DESCRIPTION_MARKER in skill_text
         and SOURCE_WORKFLOW_EDIT_MARKER in skill_text
     )
+
+
+def get_workflow_skill_names(src: Path = SRC_WORKFLOWS, pattern: str = "*.md") -> list[str]:
+    """获取 workflows 转换后的 Skill 目录名。"""
+    if not src.exists():
+        return []
+
+    return [slugify(src_file.stem) for src_file in sorted(src.glob(pattern))]
+
+
+def find_codex_cli() -> Path | None:
+    """查找可执行的 Codex CLI，避免误用桌面入口 /usr/bin/codex。"""
+    candidates: list[str | Path | None] = [
+        shutil.which("codex-cli"),
+        HOME / ".local" / "bin" / "codex-cli",
+        Path("/usr/lib/codex/resources/codex"),
+    ]
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if path.exists() and os.access(path, os.X_OK):
+            return path
+
+    return None
+
+
+def run_codex_prompt_input_probe(expected_skill_names: list[str]) -> tuple[str, str]:
+    """通过 Codex 自身 prompt-input 验证 Skills 是否进入模型可见上下文。"""
+    codex_cli = find_codex_cli()
+    if codex_cli is None:
+        return "warn", "未找到 codex-cli，已跳过模型输入验证"
+
+    try:
+        result = subprocess.run(
+            [str(codex_cli), "debug", "prompt-input", "sky-rules-sync-check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return "warn", f"prompt-input 验证未完成: {error}"
+
+    if result.returncode != 0:
+        message = (result.stderr or result.stdout).strip().splitlines()
+        reason = message[0] if message else f"退出码 {result.returncode}"
+        return "warn", f"prompt-input 验证失败: {reason}"
+
+    probe_names = [name for name in expected_skill_names if name in {"base-debugging", "base-docs", "kl-gen-page"}]
+    if not probe_names:
+        probe_names = expected_skill_names[:3]
+
+    missing = [name for name in probe_names if name not in result.stdout]
+    if missing:
+        return "fail", f"prompt-input 未看到 Skills: {', '.join(missing)}"
+
+    return "ok", f"prompt-input 可见 Skills: {', '.join(probe_names)}"
 
 
 def is_file_target(item: dict[str, object]) -> bool:
@@ -598,6 +670,39 @@ def sync_all(include_missing_targets: bool = False) -> None:
             sync_agents_skills(item["name"], item["src"], item["dst"], item["pattern"])
 
 
+def print_codex_verification() -> None:
+    """输出 Codex 规则和 Skills 的落盘与加载验证结果。"""
+    if not CODEX_HOME.exists():
+        return
+
+    print()
+    print("[Codex 验证]")
+
+    if CODEX_AGENTS_FILE.exists():
+        rules_text = CODEX_AGENTS_FILE.read_text(encoding="utf-8", errors="replace")
+        if GENERATED_BY_MARKER in rules_text:
+            print(f"  OK 全局规则落盘: {CODEX_AGENTS_FILE}")
+        else:
+            print(f"  WARN 全局规则存在但不是 sky-rules 生成产物: {CODEX_AGENTS_FILE}")
+    else:
+        print(f"  FAIL 全局规则未落盘: {CODEX_AGENTS_FILE}")
+
+    expected_skill_names = get_workflow_skill_names()
+    missing_skill_names = [
+        skill_name
+        for skill_name in expected_skill_names
+        if not (CODEX_SKILLS_DIR / skill_name / "SKILL.md").exists()
+    ]
+
+    if missing_skill_names:
+        print(f"  FAIL Skills 缺失 {len(missing_skill_names)} 个: {', '.join(missing_skill_names[:5])}")
+    else:
+        print(f"  OK Skills 落盘: {len(expected_skill_names)} 个 -> {CODEX_SKILLS_DIR}")
+
+    status, message = run_codex_prompt_input_probe(expected_skill_names)
+    print(f"  {status.upper()} Skills 加载: {message}")
+
+
 def print_sync_targets() -> None:
     """打印当前电脑解析到的同步目标。"""
     print("Sky Rules - 当前同步目标")
@@ -676,6 +781,7 @@ def main() -> None:
         git_commit_and_push()
 
     sync_all(include_missing_targets)
+    print_codex_verification()
 
     print()
     print("=" * 45)

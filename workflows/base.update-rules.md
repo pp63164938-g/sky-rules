@@ -13,6 +13,8 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 - 编辑器目录中的文件是**同步产物**，直接修改会在下次同步时被覆盖丢失
 - 如果当前工作区不是 `sky-rules` 仓库，应先确认 `sky-rules` 仓库的位置，再去该仓库中修改
+- **找不到源文件时必须停止并询问路径**：如果暂时无法定位 `sky-rules` 源仓库、源规则文件或源工作流文件，必须先向用户确认真实源路径；禁止因为“先找不到原文件”就直接修改 `~/.codex/AGENTS.md`、`~/.codex/skills/`、`~/.gemini/`、`~/.codeium/` 等同步产物，也禁止把同步产物当作临时修改方案。
+- **必须先改源文件，再看同步结果**：所有规则 / 工作流变更都应先写入 `sky-rules` 源文件，再通过同步脚本生成编辑器产物；同步产物只允许用于验证落盘结果和模型可见性，不允许作为编辑入口。
 - 修改完成后，提醒用户运行 `sync-to-editors-only.bat`（或 `python sync-workflows.py --no-git`）同步到各编辑器
 
 ## 1. 确认规则归属
@@ -24,7 +26,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 | 类型 | sky-rules 仓库中的源文件 | 同步目标 | 判断标准 |
 |------|---------------------------|---------|--------|
 | 全局规则（默认） | `rules/global-rules.md` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 跨项目通用（TODO 规范、命名规范、Git 规范等） |
-| 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Agents/Codex Skills: `~/.agents/skills/*` | 跨项目通用的工作流程 |
+| 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Codex Skills: `~/.codex/skills/*` | 跨项目通用的工作流程 |
 | 项目规则 | 项目根目录 `GEMINI.md` | 不经过 `sync-workflows.py` | 与特定项目相关 |
 | 项目工作流 | 项目根目录 `.agents/workflows/*.md` | 不经过 `sync-workflows.py` | 项目特有 |
 
@@ -85,7 +87,8 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
   - 全局规则：同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
   - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
-  - Skills：由 workflows 生成到 Agents/Codex `~/.agents/skills/`
+  - Skills：由 workflows 生成到 Codex `~/.codex/skills/`
+  - Codex 验证：必须说明 `AGENTS.md` 落盘、Skills 落盘数量，以及 `prompt-input` 是否可见代表性 Skills
 - **同步后的提交确认**：规则写入、同步完成并输出同步结果后，必须询问用户是否需要提交并推送 `sky-rules` 仓库本次变更。
 - 如果用户确认提交/推送，则按 `base-git-commit-message` 的提交信息规范，对已确认的 `sky-rules` 仓库生成 commit message，并执行：
   1. `git status --short --branch`
