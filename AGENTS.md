@@ -44,8 +44,8 @@
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找目标文件，按主题插入，禁止追加到无关文件末尾。
 4. 预览确认：向用户展示拟新增内容、目标文件和目标章节，等待确认。
 5. 写入源文件：只改本仓库源文件，不改同步产物；新增规则文件时必须同步更新 `rules/rules-manifest.json` 和 `rules/README.md`。
-6. 自检验证：在仓库根目录执行 `python3 scripts/check-rules.py`，确认 manifest、索引和拼接规则结构正确。
-7. 同步验证：在仓库根目录执行 `python3 sync-workflows.py --no-git`，并说明实际同步目标、拼接规则源和 Codex 可见性。
+6. 同步验证：在仓库根目录执行 `python3 sync-workflows.py --no-git`；同步脚本默认会先执行 `python3 scripts/check-rules.py --source-only`，同步后再执行 `python3 scripts/check-rules.py`。
+7. 输出回执：说明实际同步目标、拼接规则源、Codex 可见性、二次自检和提交状态。
 
 ## 新增规则写法
 
@@ -62,7 +62,6 @@
 常用命令：
 
 ```bash
-python3 scripts/check-rules.py
 python3 sync-workflows.py --no-git
 python3 scripts/check-rules.py
 ```
@@ -73,6 +72,7 @@ python3 scripts/check-rules.py
 - 工作流是否同步到 Windsurf / Antigravity 工作流目录。
 - Codex Skills 是否生成到 `~/.codex/skills/`。
 - Codex `prompt-input` 是否能看到代表性 Skills。
+- 同步脚本内置自检是否执行；`--skip-rules-check` 只能在排障时使用，正常规则变更禁止跳过。
 
 最终回复必须输出闭环验收回执：
 

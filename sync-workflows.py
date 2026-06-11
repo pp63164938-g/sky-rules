@@ -9,6 +9,7 @@ Sky Rules 全量同步脚本
   python sync-workflows.py --print-targets # 只打印本机解析到的同步目标
   python sync-workflows.py --doctor # 体检本机同步配置，不执行同步
   python sync-workflows.py --no-git --include-missing-targets # 预创建全部默认目标
+  python sync-workflows.py --no-git --skip-rules-check # 跳过内置规则自检
 
 同步目标默认使用各工具的用户目录约定；如果其他电脑目录不同，可通过
 SKY_RULES_* 环境变量覆盖，详见 README。
@@ -35,6 +36,7 @@ SOURCE_WORKFLOW_EDIT_MARKER = "Edit the source workflow, then sync again."
 SRC_WORKFLOWS = ROOT / "workflows"
 SRC_RULES = ROOT / "rules"
 RULES_MANIFEST = SRC_RULES / "rules-manifest.json"
+CHECK_RULES_SCRIPT = ROOT / "scripts" / "check-rules.py"
 SRC_SKILLS = ROOT / "skills"
 CONFIG_TARGET_FILES = [ROOT / "sync-targets.json", ROOT / "sync-targets.local.json"]
 CONFIG_WARNINGS: list[str] = []
@@ -272,6 +274,22 @@ def load_config_targets() -> list[dict[str, object]]:
 
 
 SYNC_MAP = [*BUILTIN_SYNC_MAP, *load_config_targets()]
+
+
+def run_rules_check(stage: str, source_only: bool = False) -> None:
+    """运行规则仓库自检，失败时阻断同步流程。"""
+    if not CHECK_RULES_SCRIPT.exists():
+        raise SystemExit(f"规则自检脚本不存在: {CHECK_RULES_SCRIPT}")
+
+    command = [sys.executable, str(CHECK_RULES_SCRIPT)]
+    if source_only:
+        command.append("--source-only")
+
+    print(f"[规则自检 - {stage}]", flush=True)
+    result = subprocess.run(command, cwd=ROOT)
+    if result.returncode != 0:
+        raise SystemExit(f"规则自检失败，已停止同步（阶段：{stage}）")
+    print()
 
 
 def git_commit_and_push() -> None:
@@ -859,6 +877,7 @@ def main() -> None:
     print_targets = "--print-targets" in sys.argv
     doctor = "--doctor" in sys.argv
     include_missing_targets = "--include-missing-targets" in sys.argv
+    skip_rules_check = "--skip-rules-check" in sys.argv
 
     if print_targets:
         print_sync_targets()
@@ -873,11 +892,21 @@ def main() -> None:
     print("=" * 45)
     print()
 
+    if skip_rules_check:
+        print("[规则自检] SKIP 已通过 --skip-rules-check 跳过内置自检")
+        print()
+    else:
+        run_rules_check("同步前", source_only=True)
+
     if not no_git:
         git_commit_and_push()
 
     sync_all(include_missing_targets)
     print_codex_verification()
+
+    if not skip_rules_check:
+        print()
+        run_rules_check("同步后")
 
     print()
     print("=" * 45)

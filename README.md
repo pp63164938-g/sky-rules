@@ -79,6 +79,7 @@ sky-rules/
 | **新电脑接入体检（推荐首次执行）** | - | `python sync-workflows.py --doctor` |
 | **规则仓库自检（推荐每次规则变更后执行）** | - | `python scripts/check-rules.py` |
 | **强制预创建全部默认目标** | - | `python sync-workflows.py --no-git --include-missing-targets` |
+| **跳过同步脚本内置自检（仅排障时使用）** | - | `python sync-workflows.py --no-git --skip-rules-check` |
 
 **同步内容：**
 
@@ -104,13 +105,21 @@ sky-rules/
 - `sync-workflows.py` 是否仍支持 `assembled_rules`、`codex_rules` 和 `workflows/README.md` 排除
 - 已生成的 Codex `base-update-rules` Skill 是否能看到规则拆分定位和自检入口
 
-推荐顺序：
+同步脚本默认自动执行闭环：
+
+1. 同步前执行 `python scripts/check-rules.py --source-only`，只检查源规则、索引和同步脚本能力。
+2. 同步规则、工作流和 Codex Skills。
+3. 执行 Codex 落盘和 `prompt-input` 可见性验证。
+4. 同步后执行 `python scripts/check-rules.py`，检查同步产物也已更新。
+
+手动验收时可直接运行：
 
 ```powershell
-python scripts/check-rules.py
 python sync-workflows.py --no-git
 python scripts/check-rules.py
 ```
+
+`--skip-rules-check` 只用于排查自检脚本本身或同步脚本接入问题，正常规则变更禁止跳过闭环自检。
 
 闭环验收回执应至少包含：
 
@@ -133,6 +142,7 @@ Codex 验证：AGENTS.md 已落盘，Skills 20 个，prompt-input 可见 base-de
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
 - 全局规则拼接：通过 `rules/rules-manifest.json` 维护规则源文件顺序，拆分源文件后仍生成完整全局规则
 - 同步排除：目录同步支持 `exclude` 排除说明文件，内置工作流同步会排除 `workflows/README.md`
+- 内置自检：正常同步默认执行同步前 `--source-only` 自检和同步后全量自检，避免只靠 AI 手动记忆闭环步骤
 - Codex 加载验证：同步后自动检查 `~/.codex/AGENTS.md`、`~/.codex/skills/` 落盘，并通过 `codex-cli debug prompt-input` 验证 Skills 是否进入模型可见上下文
 - 增量同步：比较修改时间，跳过未变更文件
 - 镜像模式：自动删除目标目录中源不存在的文件
@@ -290,9 +300,9 @@ python sync-workflows.py --doctor
 > ⚠️ **核心原则：所有规则和工作流的修改，必须在 `sky-rules/` 仓库中进行，严禁直接修改编辑器目录下的文件。**
 > 编辑器目录中的文件是**同步产物**，直接修改会在下次同步时被覆盖丢失。
 
-- **修改规则** → 先读 `rules/README.md` 和 `rules/rules-manifest.json` → 编辑目标规则源文件 → 执行 `python3 scripts/check-rules.py` → 双击 `sync-to-editors-only.bat`
-- **新增规则文件** → 更新 `rules/rules-manifest.json` 和 `rules/README.md` → 执行 `python3 scripts/check-rules.py`
-- **修改工作流** → 编辑 `workflows/*.md` → 执行 `python3 scripts/check-rules.py` → 双击 `sync-to-editors-only.bat`
+- **修改规则** → 先读 `rules/README.md` 和 `rules/rules-manifest.json` → 编辑目标规则源文件 → 执行 `python3 sync-workflows.py --no-git`（内置前后自检）或双击 `sync-to-editors-only.bat`
+- **新增规则文件** → 更新 `rules/rules-manifest.json` 和 `rules/README.md` → 执行 `python3 sync-workflows.py --no-git`（内置前后自检）
+- **修改工作流** → 编辑 `workflows/*.md` → 执行 `python3 sync-workflows.py --no-git`（内置前后自检）或双击 `sync-to-editors-only.bat`
 - **新增大章节或新工作流** → 同步更新 `rules/README.md` 或 `workflows/README.md`
 - **版本控制**：通过 Git 管理变更历史，可追溯、可回滚
 - **多设备同步**：其他设备克隆仓库后运行同步脚本即可

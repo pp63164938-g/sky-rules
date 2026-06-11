@@ -15,7 +15,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 如果当前工作区不是 `sky-rules` 仓库，应先确认 `sky-rules` 仓库的位置，再去该仓库中修改
 - **找不到源文件时必须停止并询问路径**：如果暂时无法定位 `sky-rules` 源仓库、源规则文件或源工作流文件，必须先向用户确认真实源路径；禁止因为“先找不到原文件”就直接修改 `~/.codex/AGENTS.md`、`~/.codex/skills/`、`~/.gemini/`、`~/.codeium/` 等同步产物，也禁止把同步产物当作临时修改方案。
 - **必须先改源文件，再看同步结果**：所有规则 / 工作流变更都应先写入 `sky-rules` 源文件，再通过同步脚本生成编辑器产物；同步产物只允许用于验证落盘结果和模型可见性，不允许作为编辑入口。
-- 修改完成后，先运行 `python3 scripts/check-rules.py` 自检规则结构，再运行 `sync-to-editors-only.bat`（或优先使用 `python3 sync-workflows.py --no-git`，当前环境仅 `python` 可用时再使用 `python sync-workflows.py --no-git`）同步到各编辑器
+- 修改完成后，运行 `sync-to-editors-only.bat`（或优先使用 `python3 sync-workflows.py --no-git`，当前环境仅 `python` 可用时再使用 `python sync-workflows.py --no-git`）同步到各编辑器；同步脚本默认会执行同步前源结构自检和同步后全量自检
 
 ## 0.1 sky-rules 源仓库定位规范
 
@@ -66,6 +66,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 写入前预览时必须一并说明是否需要更新索引；不需要更新时说明原因。
 - `rules/rules-manifest.json` 是全局规则同步顺序的唯一清单；新增、删除或重命名 `rules/` 下的规则源文件时，必须同步维护 manifest。
 - 涉及规则、manifest、索引或同步流程调整时，必须同步维护 `scripts/check-rules.py` 的校验项；如果不需要更新脚本，必须说明原因。
+- 同步脚本内置自检逻辑属于闭环的一部分；调整 `sync-workflows.py` 时必须确认 `--source-only` 前置自检、同步后全量自检和 `--skip-rules-check` 排障开关仍可用。
 
 ## 1.2 全局规则拆分文件定位规范
 
@@ -130,16 +131,16 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 如果涉及索引维护，说明同步更新了哪个索引文件；如果未更新索引，说明原因
 - 如果涉及全局规则源文件新增 / 删除 / 重命名，说明 `rules/rules-manifest.json` 的拼接顺序变化
 - **用户确认后的自动同步**：当用户在预览后回复“可以”、“确认”、“更新”、“执行”等明确同意语义时，必须完成实际写入，并立即执行：
-  1. 在已确认的 `sky-rules` 仓库根目录优先执行 `python3 scripts/check-rules.py`；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python scripts/check-rules.py`
-  2. 自检通过后，优先执行 `python3 sync-workflows.py --no-git`；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python sync-workflows.py --no-git`
-  3. 同步完成后再次执行 `python3 scripts/check-rules.py`，确认生成后的 Codex Skill 等同步产物也已包含维护闭环
+  1. 在已确认的 `sky-rules` 仓库根目录优先执行 `python3 sync-workflows.py --no-git`；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python sync-workflows.py --no-git`
+  2. 确认同步脚本输出中包含同步前 `scripts/check-rules.py --source-only` 自检、Codex 验证和同步后 `scripts/check-rules.py` 全量自检
+  3. 如需单独复核，额外执行 `python3 scripts/check-rules.py`，但不得用 `--skip-rules-check` 跳过正常闭环
 - 如果需要输出完整命令，必须基于当前电脑上已确认的仓库实际路径生成；Git Bash 使用正斜杠路径格式，禁止写死某台电脑的本地路径
 - 如果当前电脑的 Gemini / Windsurf / Codex / Agents 目录与默认约定不同，必须通过 `SKY_RULES_*` 环境变量覆盖同步目标，禁止直接修改同步脚本里的目标路径
 - 在新电脑或目录不确定时，必须优先执行 `python3 sync-workflows.py --doctor` 体检 Codex / Antigravity / Windsurf / Agents 的实际写入路径和可写状态；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python sync-workflows.py --doctor`
 - 如果 `--doctor` 显示某个未使用工具目标为 `SKIP`，属于正常结果；默认同步会跳过该目标，禁止为了没用的工具强行创建目录
 - 后续扩展其他编辑器同步目标时，优先通过 `sync-targets.json` 增加团队共享目标；仅当前电脑私有的目标写入 `sync-targets.local.json`，禁止为了新增编辑器直接改 Python 同步逻辑
 - **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
-  - 自检结果：说明 `scripts/check-rules.py` 是否通过，若有 WARN 必须列出警告含义
+  - 自检结果：说明同步前 `scripts/check-rules.py --source-only` 和同步后 `scripts/check-rules.py` 是否通过，若有 WARN 必须列出警告含义
   - 全局规则：按 `rules/rules-manifest.json` 拼接后，同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
   - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
   - Skills：由 workflows 生成到 Codex `~/.codex/skills/`
@@ -148,7 +149,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
   - `自检：python3 scripts/check-rules.py -> OK / WARN / FAIL`
   - `同步：python3 sync-workflows.py --no-git -> OK / WARN / FAIL`
   - `Codex 验证：AGENTS.md 已落盘，Skills 数量，prompt-input 代表性 Skills 可见性`
-  - `二次自检：python3 scripts/check-rules.py -> OK / WARN / FAIL`
+  - `二次自检：同步脚本内置 python3 scripts/check-rules.py -> OK / WARN / FAIL`
   - `提交状态：未提交 / 已提交 commit hash；未推送时也要说明`
 - 如果任一环节出现 `WARN` 或 `FAIL`，必须摘出关键原因和影响范围；只有用户明确要求“贴完整输出”时，才贴完整终端输出。
 - **同步后的提交确认**：规则写入、同步完成并输出同步结果后，必须询问用户是否需要提交并推送 `sky-rules` 仓库本次变更。

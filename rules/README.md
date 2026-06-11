@@ -63,8 +63,7 @@
 3. **定位插入点**：按主题插入，不追加到无关文件末尾；检查目标位置前后上下文。
 4. **预览确认**：写入前先给用户展示规则内容、目标文件和目标章节。
 5. **维护清单**：新增规则文件时，必须同步更新 `rules/rules-manifest.json` 和本文件索引；只补充已有文件时通常不需要更新 manifest。
-6. **自检验证**：写入后执行 `python3 scripts/check-rules.py`，确认 manifest、索引和拼接后的关键规则完整。
-7. **同步验证**：自检通过后执行 `python3 sync-workflows.py --no-git`，确认拼接后的全局规则已同步到目标工具。
+6. **同步验证**：写入后执行 `python3 sync-workflows.py --no-git`；同步脚本会自动执行同步前源结构自检和同步后全量自检，确认拼接后的全局规则已同步到目标工具。
 
 ## 新增规则文件流程
 
@@ -74,8 +73,8 @@
 2. 在 `rules/rules-manifest.json` 中加入新文件，并放到正确拼接顺序。
 3. 在本文件的“规则文件索引”和“新增规则归属”中补充入口。
 4. 更新根目录 `AGENTS.md`，如果新增了新的先读场景或目录职责。
-5. 执行 `python3 scripts/check-rules.py`，确保新增文件、manifest 和索引互相一致。
-6. 执行同步并验证目标工具读取完整规则。
+5. 执行 `python3 sync-workflows.py --no-git`，通过内置自检确保新增文件、manifest、索引和同步产物互相一致。
+6. 验证目标工具读取完整规则。
 
 ## 规则写法模板
 
@@ -126,6 +125,6 @@ const result = getXxxValue(xxx)
 - 新规则是否包含明确的禁止项和判断标准。
 - 新增规则文件后是否更新 `rules/rules-manifest.json`。
 - 新增大主题后是否更新本索引和根目录 `AGENTS.md`。
-- 修改后是否执行 `python3 scripts/check-rules.py` 并通过。
+- 修改后是否执行 `python3 sync-workflows.py --no-git` 并通过内置前后自检。
 - 修改后是否同步并验证目标工具可见性。
 - 最终回复是否输出自检、同步、Codex 可见性、二次自检和提交状态的闭环验收回执。
