@@ -15,7 +15,21 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 如果当前工作区不是 `sky-rules` 仓库，应先确认 `sky-rules` 仓库的位置，再去该仓库中修改
 - **找不到源文件时必须停止并询问路径**：如果暂时无法定位 `sky-rules` 源仓库、源规则文件或源工作流文件，必须先向用户确认真实源路径；禁止因为“先找不到原文件”就直接修改 `~/.codex/AGENTS.md`、`~/.codex/skills/`、`~/.gemini/`、`~/.codeium/` 等同步产物，也禁止把同步产物当作临时修改方案。
 - **必须先改源文件，再看同步结果**：所有规则 / 工作流变更都应先写入 `sky-rules` 源文件，再通过同步脚本生成编辑器产物；同步产物只允许用于验证落盘结果和模型可见性，不允许作为编辑入口。
-- 修改完成后，提醒用户运行 `sync-to-editors-only.bat`（或 `python sync-workflows.py --no-git`）同步到各编辑器
+- 修改完成后，提醒用户运行 `sync-to-editors-only.bat`（或优先使用 `python3 sync-workflows.py --no-git`，当前环境仅 `python` 可用时再使用 `python sync-workflows.py --no-git`）同步到各编辑器
+
+## 0.1 sky-rules 源仓库定位规范
+
+**核心原则**：当当前工作区不是 `sky-rules` 源仓库时，必须先通过可验证来源定位源仓库，禁止把某台机器的固定路径写入规则或工作流。
+
+定位顺序：
+
+1. 优先使用用户明确提供的路径，并校验该目录包含 `sync-workflows.py`、`rules/global-rules.md`、`workflows/`。
+2. 若当前会话已确认过源仓库路径，可以复用该路径，但每次使用前仍需重新校验仓库标识文件。
+3. 可使用工具配置、环境变量、shell history 等作为线索，但只能作为线索，必须进入目录后校验。
+4. 搜索目录必须收敛在常见项目目录或已知父目录内，禁止默认全盘 `find /`、扫描整个 `/mnt`、`/home` 等大范围挂载点。
+5. 若短时间内无法确认源仓库，必须停止并询问用户路径，禁止继续扩大扫描范围。
+
+示例路径必须使用占位表达，例如 `<已确认的 sky-rules 仓库路径>` 或 `$SKY_RULES_REPO`，禁止写入个人机器上的绝对路径。
 
 ## 1. 确认规则归属
 
@@ -78,10 +92,10 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 告知用户：加在了哪个文件的哪个章节
 - 如果涉及多个文件（如全局 + 项目都需要改），一次性说明
 - **用户确认后的自动同步**：当用户在预览后回复“可以”、“确认”、“更新”、“执行”等明确同意语义时，必须完成实际写入，并立即执行：
-  在已确认的 `sky-rules` 仓库根目录执行 `python sync-workflows.py --no-git`
+  在已确认的 `sky-rules` 仓库根目录优先执行 `python3 sync-workflows.py --no-git`；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python sync-workflows.py --no-git`
 - 如果需要输出完整命令，必须基于当前电脑上已确认的仓库实际路径生成；Git Bash 使用正斜杠路径格式，禁止写死某台电脑的本地路径
 - 如果当前电脑的 Gemini / Windsurf / Codex / Agents 目录与默认约定不同，必须通过 `SKY_RULES_*` 环境变量覆盖同步目标，禁止直接修改同步脚本里的目标路径
-- 在新电脑或目录不确定时，必须先执行 `python sync-workflows.py --doctor` 体检 Codex / Antigravity / Windsurf / Agents 的实际写入路径和可写状态，再执行同步
+- 在新电脑或目录不确定时，必须优先执行 `python3 sync-workflows.py --doctor` 体检 Codex / Antigravity / Windsurf / Agents 的实际写入路径和可写状态；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python sync-workflows.py --doctor`
 - 如果 `--doctor` 显示某个未使用工具目标为 `SKIP`，属于正常结果；默认同步会跳过该目标，禁止为了没用的工具强行创建目录
 - 后续扩展其他编辑器同步目标时，优先通过 `sync-targets.json` 增加团队共享目标；仅当前电脑私有的目标写入 `sync-targets.local.json`，禁止为了新增编辑器直接改 Python 同步逻辑
 - **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
