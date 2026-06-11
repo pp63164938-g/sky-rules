@@ -47,7 +47,7 @@ def as_list(value: object) -> list[str]:
     if isinstance(value, str):
         return [value]
 
-    if isinstance(value, list):
+    if isinstance(value, (list, tuple, set)):
         return [str(item) for item in value if str(item)]
 
     return [str(value)]
@@ -124,6 +124,7 @@ BUILTIN_SYNC_MAP = [
         "dst": WINDSURF_WORKFLOWS_DIR,
         "mode": "mirror",
         "pattern": "*.md",
+        "exclude": ["README.md"],
         "exact_env": ["SKY_RULES_WINDSURF_WORKFLOWS_DIR"],
         "base_env": ["SKY_RULES_WINDSURF_HOME"],
         "detect": WINDSURF_HOME,
@@ -134,6 +135,7 @@ BUILTIN_SYNC_MAP = [
         "dst": GEMINI_WORKFLOWS_DIR,
         "mode": "mirror",
         "pattern": "*.md",
+        "exclude": ["README.md"],
         "exact_env": ["SKY_RULES_GEMINI_WORKFLOWS_DIR"],
         "base_env": ["SKY_RULES_GEMINI_HOME"],
         "detect": GEMINI_HOME / "antigravity",
@@ -171,6 +173,7 @@ BUILTIN_SYNC_MAP = [
         "dst": CODEX_SKILLS_DIR,
         "mode": "agents_skills",
         "pattern": "*.md",
+        "exclude": ["README.md"],
         "exact_env": ["SKY_RULES_CODEX_SKILLS_DIR", "SKY_RULES_AGENTS_SKILLS_DIR"],
         "base_env": ["SKY_RULES_CODEX_HOME", "CODEX_HOME", "SKY_RULES_AGENTS_HOME"],
         "detect": CODEX_HOME,
@@ -236,6 +239,7 @@ def normalize_config_target(item: object, config_path: Path) -> dict[str, object
         "dst": dst,
         "mode": mode,
         "pattern": str(item.get("pattern", "*.md")),
+        "exclude": as_list(item.get("exclude")),
         "exact_env": exact_env,
         "base_env": base_env,
         "detect": detect,
@@ -341,12 +345,30 @@ def is_generated_sky_workflow_skill(skill_text: str) -> bool:
     )
 
 
-def get_workflow_skill_names(src: Path = SRC_WORKFLOWS, pattern: str = "*.md") -> list[str]:
+def iter_sync_source_files(src: Path, pattern: str, exclude: object = None) -> list[Path]:
+    """按匹配规则获取源文件，并排除不参与同步的说明文件。"""
+    excluded_names = set(as_list(exclude))
+    return [src_file for src_file in sorted(src.glob(pattern)) if src_file.name not in excluded_names]
+
+
+def is_same_file_content(left_file: Path, right_file: Path) -> bool:
+    """判断两个文件内容是否一致，用于清理已排除的旧同步残留。"""
+    try:
+        return left_file.read_bytes() == right_file.read_bytes()
+    except OSError:
+        return False
+
+
+def get_workflow_skill_names(
+    src: Path = SRC_WORKFLOWS,
+    pattern: str = "*.md",
+    exclude: object = None,
+) -> list[str]:
     """获取 workflows 转换后的 Skill 目录名。"""
     if not src.exists():
         return []
 
-    return [slugify(src_file.stem) for src_file in sorted(src.glob(pattern))]
+    return [slugify(src_file.stem) for src_file in iter_sync_source_files(src, pattern, exclude or ["README.md"])]
 
 
 def find_codex_cli() -> Path | None:
@@ -535,14 +557,15 @@ def diagnose_target(item: dict[str, object]) -> str:
     return "ok"
 
 
-def sync_mirror(name: str, src: Path, dst: Path, pattern: str) -> None:
+def sync_mirror(name: str, src: Path, dst: Path, pattern: str, exclude: object = None) -> None:
     """镜像同步：将源目录中匹配的文件完整同步到目标目录。"""
     if not src.exists():
         print(f"  SKIP {name}: 源目录不存在 ({src})")
         return
 
     dst.mkdir(parents=True, exist_ok=True)
-    src_files = {f.name: f for f in src.glob(pattern)}
+    excluded_names = set(as_list(exclude))
+    src_files = {f.name: f for f in iter_sync_source_files(src, pattern, excluded_names)}
 
     copied, skipped = 0, 0
     for name_f, src_file in src_files.items():
@@ -555,6 +578,12 @@ def sync_mirror(name: str, src: Path, dst: Path, pattern: str) -> None:
 
     removed = 0
     for dst_file in dst.glob(pattern):
+        if dst_file.name in excluded_names:
+            excluded_src_file = src / dst_file.name
+            if excluded_src_file.exists() and is_same_file_content(dst_file, excluded_src_file):
+                dst_file.unlink()
+                removed += 1
+            continue
         if dst_file.name not in src_files:
             dst_file.unlink()
             removed += 1
@@ -595,7 +624,7 @@ def sync_codex_rules(name: str, src: Path, dst: Path) -> None:
     print(f"  OK {name}: 已同步")
 
 
-def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str) -> None:
+def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str, exclude: object = None) -> None:
     """将 workflows/*.md 转换为 Agents/Codex 可识别的 skill 目录。"""
     if not src.exists():
         print(f"  SKIP {name}: 源目录不存在 ({src})")
@@ -605,7 +634,7 @@ def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str) -> None:
     source_names: set[str] = set()
     copied = 0
 
-    for src_file in sorted(src.glob(pattern)):
+    for src_file in iter_sync_source_files(src, pattern, exclude):
         skill_name = slugify(src_file.stem)
         source_names.add(skill_name)
 
@@ -661,13 +690,13 @@ def sync_all(include_missing_targets: bool = False) -> None:
 
         mode = item["mode"]
         if mode == "mirror":
-            sync_mirror(item["name"], item["src"], item["dst"], item["pattern"])
+            sync_mirror(item["name"], item["src"], item["dst"], item["pattern"], item.get("exclude"))
         elif mode == "file":
             sync_file(item["name"], item["src"], item["dst"])
         elif mode == "codex_rules":
             sync_codex_rules(item["name"], item["src"], item["dst"])
         elif mode == "agents_skills":
-            sync_agents_skills(item["name"], item["src"], item["dst"], item["pattern"])
+            sync_agents_skills(item["name"], item["src"], item["dst"], item["pattern"], item.get("exclude"))
 
 
 def print_codex_verification() -> None:
@@ -687,7 +716,7 @@ def print_codex_verification() -> None:
     else:
         print(f"  FAIL 全局规则未落盘: {CODEX_AGENTS_FILE}")
 
-    expected_skill_names = get_workflow_skill_names()
+    expected_skill_names = get_workflow_skill_names(exclude=["README.md"])
     missing_skill_names = [
         skill_name
         for skill_name in expected_skill_names
@@ -731,7 +760,7 @@ def run_doctor() -> None:
         print(f"  FAIL 全局规则不存在: {rules_file}")
 
     if SRC_WORKFLOWS.exists():
-        workflow_count = len(list(SRC_WORKFLOWS.glob("*.md")))
+        workflow_count = len(iter_sync_source_files(SRC_WORKFLOWS, "*.md", ["README.md"]))
         print(f"  OK 工作流目录: {SRC_WORKFLOWS} ({workflow_count} 个 .md)")
     else:
         workflow_count = 0

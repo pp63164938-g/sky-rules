@@ -15,7 +15,8 @@
       "target": "${HOME}/.example-ai/workflows",
       "target_env": "SKY_RULES_EXAMPLE_WORKFLOWS_DIR",
       "detect": "${HOME}/.example-ai",
-      "pattern": "*.md"
+      "pattern": "*.md",
+      "exclude": ["README.md"]
     }
   ]
 }

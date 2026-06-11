@@ -6,9 +6,12 @@
 
 ```
 sky-rules/
+├── AGENTS.md              # AI 入口说明：修改边界、先读顺序、新增规则流程
 ├── rules/                  # 全局规则
+│   ├── README.md          # 全局规则维护索引
 │   └── global-rules.md    # 各编辑器共用的全局规则（详见下方说明）
 ├── workflows/              # 工作流文件（所有编辑器共享）
+│   ├── README.md          # 工作流维护索引
 │   ├── base.*.md           # 基础工作流
 │   ├── kl.*.md             # Kunlun 项目专用工作流
 │   └── more-tool.*.md      # 工具类工作流
@@ -18,6 +21,17 @@ sky-rules/
 ├── commit-push-and-sync-to-editors.bat # 双击：Git 提交、推送并同步到编辑器
 └── README.md
 ```
+
+## 维护入口
+
+| 入口 | 面向对象 | 作用 |
+|------|----------|------|
+| `AGENTS.md` | AI | 进入本仓库后的优先读取入口，说明红线、先读顺序、文件职责和新增规则流程 |
+| `README.md` | 人 / AI | 仓库维护手册，说明目录结构、同步方式、接入方式和同步目标 |
+| `rules/README.md` | 人 / AI | 全局规则维护索引，说明规则归属、章节策略、写法模板和维护自检 |
+| `workflows/README.md` | 人 / AI | 工作流维护索引，说明工作流命名、归属、结构和扩展标准 |
+
+新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。长规则正文只维护在 `rules/global-rules.md` 或对应 `workflows/*.md` 中，入口文件只做索引和流程说明。
 
 ### `rules/global-rules.md` 说明
 
@@ -31,6 +45,16 @@ sky-rules/
 | Windsurf | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 要求的固定文件名 |
 
 > 修改规则时只需编辑 `rules/global-rules.md`，运行同步脚本后各编辑器自动生效。
+
+### 新增规则的维护流程
+
+新增规则或工作流时遵循以下顺序：
+
+1. 判断归属：通用硬规则放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
+2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
+3. 定位章节：按主题插入，禁止追加到文件末尾；新增大章节或新工作流时更新对应 README 索引。
+4. 预览确认：AI 写入前必须先展示拟新增内容和插入位置，用户确认后再修改源文件。
+5. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认规则和 Skills 已同步到目标工具。
 
 ## 使用方式
 
@@ -62,6 +86,7 @@ sky-rules/
 - 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
 - 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
+- 同步排除：目录同步支持 `exclude` 排除说明文件，内置工作流同步会排除 `workflows/README.md`
 - Codex 加载验证：同步后自动检查 `~/.codex/AGENTS.md`、`~/.codex/skills/` 落盘，并通过 `codex-cli debug prompt-input` 验证 Skills 是否进入模型可见上下文
 - 增量同步：比较修改时间，跳过未变更文件
 - 镜像模式：自动删除目标目录中源不存在的文件
@@ -186,7 +211,8 @@ python sync-workflows.py --no-git
       "target": "${HOME}/.example-ai/workflows",
       "target_env": "SKY_RULES_EXAMPLE_WORKFLOWS_DIR",
       "detect": "${HOME}/.example-ai",
-      "pattern": "*.md"
+      "pattern": "*.md",
+      "exclude": ["README.md"]
     }
   ]
 }
@@ -203,6 +229,7 @@ python sync-workflows.py --no-git
 | `target_env` | 精确覆盖目标路径的环境变量名 |
 | `detect` | 工具检测目录；不存在且未配置环境变量时，默认同步会跳过该目标 |
 | `pattern` | `mirror` / `agents_skills` 使用的文件匹配规则，默认 `*.md` |
+| `exclude` | 可选，按文件名排除不参与目录同步或 Skill 生成的说明文件，例如 `["README.md"]` |
 
 新增后先运行：
 
@@ -219,6 +246,7 @@ python sync-workflows.py --doctor
 
 - **修改规则** → 编辑 `rules/global-rules.md` → 双击 `sync-to-editors-only.bat`
 - **修改工作流** → 编辑 `workflows/*.md` → 双击 `sync-to-editors-only.bat`
+- **新增大章节或新工作流** → 同步更新 `rules/README.md` 或 `workflows/README.md`
 - **版本控制**：通过 Git 管理变更历史，可追溯、可回滚
 - **多设备同步**：其他设备克隆仓库后运行同步脚本即可
 - **AI 优化规则**：让 AI 在 sky-rules 仓库中直接修改，修改后运行同步脚本
