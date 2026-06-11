@@ -3,7 +3,7 @@
     {
       "name": "示例编辑器全局规则",
       "mode": "codex_rules",
-      "source": "rules/global-rules.md",
+      "source": "rules/rules-manifest.json",
       "target": "${HOME}/.example-ai/AGENTS.md",
       "target_env": "SKY_RULES_EXAMPLE_RULES_FILE",
       "detect": "${HOME}/.example-ai"

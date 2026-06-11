@@ -23,7 +23,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 定位顺序：
 
-1. 优先使用用户明确提供的路径，并校验该目录包含 `sync-workflows.py`、`rules/global-rules.md`、`workflows/`。
+1. 优先使用用户明确提供的路径，并校验该目录包含 `sync-workflows.py`、`rules/rules-manifest.json`、`rules/global-rules.md`、`workflows/`。
 2. 若当前会话已确认过源仓库路径，可以复用该路径，但每次使用前仍需重新校验仓库标识文件。
 3. 可使用工具配置、环境变量、shell history 等作为线索，但只能作为线索，必须进入目录后校验。
 4. 搜索目录必须收敛在常见项目目录或已知父目录内，禁止默认全盘 `find /`、扫描整个 `/mnt`、`/home` 等大范围挂载点。
@@ -33,13 +33,13 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 ## 1. 确认规则归属
 
-**默认规则**：如果用户未指定更新哪个规则文件，**默认更新全局规则**（`sky-rules/rules/global-rules.md`）。
+**默认规则**：如果用户未指定更新哪个规则文件，默认更新 `sky-rules` 的全局规则体系，但必须先通过 `rules/README.md` 和 `rules/rules-manifest.json` 定位具体源文件。只有 P0 红线、场景索引、读取策略这类常驻入口内容，才直接更新 `rules/global-rules.md`。
 
 如果用户指定了具体的规则文件或工作流，则更新用户指定的文件。
 
 | 类型 | sky-rules 仓库中的源文件 | 同步目标 | 判断标准 |
 |------|---------------------------|---------|--------|
-| 全局规则（默认） | `rules/global-rules.md` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 跨项目通用（TODO 规范、命名规范、Git 规范等） |
+| 全局规则（默认） | `rules/rules-manifest.json` 拼接的 `rules/global-rules.md`、`rules/core/*.md`、`rules/scenes/*.md`、`rules/projects/*.md` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 跨项目通用（TODO 规范、命名规范、Git 规范等） |
 | 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Codex Skills: `~/.codex/skills/*` | 跨项目通用的工作流程 |
 | 项目规则 | 项目根目录 `GEMINI.md` | 不经过 `sync-workflows.py` | 与特定项目相关 |
 | 项目工作流 | 项目根目录 `.agents/workflows/*.md` | 不经过 `sync-workflows.py` | 项目特有 |
@@ -53,7 +53,8 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 | 变更类型 | 需要同步检查的索引 |
 |---------|-------------------|
 | 新增全局规则大章节 | `rules/README.md` |
-| 调整全局规则归属策略 | `rules/README.md`、根目录 `AGENTS.md` |
+| 新增全局规则源文件 | `rules/rules-manifest.json`、`rules/README.md` |
+| 调整全局规则归属策略 | `rules/rules-manifest.json`、`rules/README.md`、根目录 `AGENTS.md` |
 | 新增工作流文件 | `workflows/README.md` |
 | 调整工作流命名或分类 | `workflows/README.md`、根目录 `AGENTS.md` |
 | 新增 AI 工具同步目标 | `README.md`、`sync-targets.example.json` |
@@ -62,6 +63,19 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 索引文件只写职责、入口、流程和归属说明，不复制长规则正文。
 - 如果只是补充某条已有规则，不需要机械更新索引；只有新增大章节、改变归属或新增工作流时才更新。
 - 写入前预览时必须一并说明是否需要更新索引；不需要更新时说明原因。
+- `rules/rules-manifest.json` 是全局规则同步顺序的唯一清单；新增、删除或重命名 `rules/` 下的规则源文件时，必须同步维护 manifest。
+
+## 1.2 全局规则拆分文件定位规范
+
+**核心原则**：修改全局规则时，禁止直接把内容塞进 `rules/global-rules.md`。必须先按 `rules/README.md` 的规则文件索引定位目标细则文件。
+
+定位顺序：
+
+1. 先读 `rules/README.md`，根据“规则文件索引”和“新增规则归属”确定候选文件。
+2. 再读 `rules/rules-manifest.json`，确认候选文件在拼接清单中，且同步顺序合理。
+3. 搜索候选文件和相邻主题文件，确认是否已有类似规则。
+4. 只有当规则属于 P0 红线、规则读取策略、场景索引或示例总体要求时，才修改 `rules/global-rules.md`。
+5. 如果现有文件无法承载新增主题，先向用户预览新增文件名、放置目录、manifest 插入位置和 README 索引更新内容，确认后再写入。
 
 ## 2. 查看目标文件现有内容
 
@@ -70,6 +84,8 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 1. 是否已有相同或类似的规则（避免重复）
 2. 应该插入到哪个章节（按主题归类）
 3. 现有的编号/格式是什么（保持一致）
+
+如果目标是全局规则体系，还必须先查看 `rules/README.md` 和 `rules/rules-manifest.json`，确认目标规则源文件和 manifest 状态。
 
 ## 3. 找到正确的插入位置
 
@@ -101,7 +117,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 1. 将拟定的规则内容以 markdown 形式展示给用户
 2. 说明：将插入到哪个文件的哪个章节
-3. 说明：是否需要同步更新 `AGENTS.md`、`README.md`、`rules/README.md` 或 `workflows/README.md`
+3. 说明：是否需要同步更新 `rules/rules-manifest.json`、`AGENTS.md`、`README.md`、`rules/README.md` 或 `workflows/README.md`
 4. 等待用户确认后，再执行实际的文件修改
 5. 如果用户要求调整，修改后再次预览，直到用户满意
 
@@ -110,6 +126,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 告知用户：加在了哪个文件的哪个章节
 - 如果涉及多个文件（如全局 + 项目都需要改），一次性说明
 - 如果涉及索引维护，说明同步更新了哪个索引文件；如果未更新索引，说明原因
+- 如果涉及全局规则源文件新增 / 删除 / 重命名，说明 `rules/rules-manifest.json` 的拼接顺序变化
 - **用户确认后的自动同步**：当用户在预览后回复“可以”、“确认”、“更新”、“执行”等明确同意语义时，必须完成实际写入，并立即执行：
   在已确认的 `sky-rules` 仓库根目录优先执行 `python3 sync-workflows.py --no-git`；如果当前环境仅 `python` 可用且确认其指向 Python 3，再执行 `python sync-workflows.py --no-git`
 - 如果需要输出完整命令，必须基于当前电脑上已确认的仓库实际路径生成；Git Bash 使用正斜杠路径格式，禁止写死某台电脑的本地路径
@@ -118,7 +135,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 如果 `--doctor` 显示某个未使用工具目标为 `SKIP`，属于正常结果；默认同步会跳过该目标，禁止为了没用的工具强行创建目录
 - 后续扩展其他编辑器同步目标时，优先通过 `sync-targets.json` 增加团队共享目标；仅当前电脑私有的目标写入 `sync-targets.local.json`，禁止为了新增编辑器直接改 Python 同步逻辑
 - **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
-  - 全局规则：同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
+  - 全局规则：按 `rules/rules-manifest.json` 拼接后，同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`
   - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
   - Skills：由 workflows 生成到 Codex `~/.codex/skills/`
   - Codex 验证：必须说明 `AGENTS.md` 落盘、Skills 落盘数量，以及 `prompt-input` 是否可见代表性 Skills

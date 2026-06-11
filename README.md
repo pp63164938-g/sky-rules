@@ -9,7 +9,11 @@ sky-rules/
 ├── AGENTS.md              # AI 入口说明：修改边界、先读顺序、新增规则流程
 ├── rules/                  # 全局规则
 │   ├── README.md          # 全局规则维护索引
-│   └── global-rules.md    # 各编辑器共用的全局规则（详见下方说明）
+│   ├── rules-manifest.json # 全局规则拼接清单
+│   ├── global-rules.md    # 常驻入口：P0 红线、场景索引、读取策略
+│   ├── core/              # 跨场景基础硬规则
+│   ├── scenes/            # 场景化规则细则
+│   └── projects/          # 项目专属规则
 ├── workflows/              # 工作流文件（所有编辑器共享）
 │   ├── README.md          # 工作流维护索引
 │   ├── base.*.md           # 基础工作流
@@ -31,11 +35,13 @@ sky-rules/
 | `rules/README.md` | 人 / AI | 全局规则维护索引，说明规则归属、章节策略、写法模板和维护自检 |
 | `workflows/README.md` | 人 / AI | 工作流维护索引，说明工作流命名、归属、结构和扩展标准 |
 
-新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。长规则正文只维护在 `rules/global-rules.md` 或对应 `workflows/*.md` 中，入口文件只做索引和流程说明。
+新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。全局规则细则按主题拆在 `rules/core/`、`rules/scenes/`、`rules/projects/` 中，并由 `rules/rules-manifest.json` 统一拼接；入口文件只做索引和流程说明。
 
-### `rules/global-rules.md` 说明
+### 全局规则拼接说明
 
-这是**所有编辑器共用的全局规则源文件**，包含代码规范、Git 操作规范、CSS 规范等跨项目通用规则。
+`rules/rules-manifest.json` 是**所有编辑器共用的全局规则拼接清单**。同步脚本会按清单顺序读取 `rules/global-rules.md`、`rules/core/*.md`、`rules/scenes/*.md`、`rules/projects/*.md`，生成各编辑器实际读取的完整全局规则。
+
+`rules/global-rules.md` 只保留常驻入口内容，例如 P0 红线、场景索引和读取策略。具体规则细节放到对应拆分文件中，便于 AI 和人按主题查找。
 
 同步脚本会将它**自动映射**为各编辑器要求的文件名：
 
@@ -43,18 +49,19 @@ sky-rules/
 |--------|-----------------|------|
 | Antigravity | `~/.gemini/GEMINI.md` | Gemini CLI 要求的固定文件名 |
 | Windsurf | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 要求的固定文件名 |
+| Codex | `~/.codex/AGENTS.md` | Codex 用户级全局规则 |
 
-> 修改规则时只需编辑 `rules/global-rules.md`，运行同步脚本后各编辑器自动生效。
+> 修改规则时应先通过 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标源文件；新增规则文件后必须更新 manifest，运行同步脚本后各编辑器自动生效。
 
 ### 新增规则的维护流程
 
 新增规则或工作流时遵循以下顺序：
 
-1. 判断归属：通用硬规则放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
+1. 判断归属：通用硬规则放 `rules/core/` 或 `rules/scenes/`；P0 红线和场景索引才放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
-3. 定位章节：按主题插入，禁止追加到文件末尾；新增大章节或新工作流时更新对应 README 索引。
+3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标文件，禁止追加到无关文件末尾；新增规则文件或新工作流时更新对应 README 索引。
 4. 预览确认：AI 写入前必须先展示拟新增内容和插入位置，用户确认后再修改源文件。
-5. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认规则和 Skills 已同步到目标工具。
+5. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认拼接规则和 Skills 已同步到目标工具。
 
 ## 使用方式
 
@@ -75,9 +82,9 @@ sky-rules/
 | `workflows/*.md` | `~/.codeium/windsurf/global_workflows/` | Windsurf 工作流 |
 | `workflows/*.md` | `~/.gemini/antigravity/global_workflows/` | Antigravity 工作流 |
 | `workflows/*.md` | `~/.codex/skills/` | Codex Skills |
-| `rules/global-rules.md` | `~/.gemini/GEMINI.md` | Antigravity 全局规则 |
-| `rules/global-rules.md` | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 全局规则 |
-| `rules/global-rules.md` | `~/.codex/AGENTS.md` | Codex 全局规则 |
+| `rules/rules-manifest.json` | `~/.gemini/GEMINI.md` | Antigravity 全局规则（按 manifest 拼接） |
+| `rules/rules-manifest.json` | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 全局规则（按 manifest 拼接） |
+| `rules/rules-manifest.json` | `~/.codex/AGENTS.md` | Codex 全局规则（按 manifest 拼接并去除 frontmatter） |
 
 **同步特性：**
 - 使用 Python `shutil` 处理文件复制，兼容中文路径
@@ -86,6 +93,7 @@ sky-rules/
 - 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
 - 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
+- 全局规则拼接：通过 `rules/rules-manifest.json` 维护规则源文件顺序，拆分源文件后仍生成完整全局规则
 - 同步排除：目录同步支持 `exclude` 排除说明文件，内置工作流同步会排除 `workflows/README.md`
 - Codex 加载验证：同步后自动检查 `~/.codex/AGENTS.md`、`~/.codex/skills/` 落盘，并通过 `codex-cli debug prompt-input` 验证 Skills 是否进入模型可见上下文
 - 增量同步：比较修改时间，跳过未变更文件
@@ -199,7 +207,7 @@ python sync-workflows.py --no-git
     {
       "name": "示例编辑器全局规则",
       "mode": "codex_rules",
-      "source": "rules/global-rules.md",
+      "source": "rules/rules-manifest.json",
       "target": "${HOME}/.example-ai/AGENTS.md",
       "target_env": "SKY_RULES_EXAMPLE_RULES_FILE",
       "detect": "${HOME}/.example-ai"
@@ -223,7 +231,7 @@ python sync-workflows.py --no-git
 | 字段 | 说明 |
 |------|------|
 | `name` | 体检和同步输出中展示的目标名称 |
-| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`codex_rules` 生成去除 frontmatter 的规则文件、`agents_skills` 由工作流生成 Skill |
+| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`assembled_rules` 按 manifest 拼接规则文件、`codex_rules` 按 manifest 拼接并去除 frontmatter、`agents_skills` 由工作流生成 Skill |
 | `source` | 源文件或源目录，默认相对 `sky-rules` 仓库根目录 |
 | `target` | 默认目标路径，支持 `${ROOT}`、`${HOME}`、`~` 和系统环境变量 |
 | `target_env` | 精确覆盖目标路径的环境变量名 |
@@ -244,7 +252,8 @@ python sync-workflows.py --doctor
 > ⚠️ **核心原则：所有规则和工作流的修改，必须在 `sky-rules/` 仓库中进行，严禁直接修改编辑器目录下的文件。**
 > 编辑器目录中的文件是**同步产物**，直接修改会在下次同步时被覆盖丢失。
 
-- **修改规则** → 编辑 `rules/global-rules.md` → 双击 `sync-to-editors-only.bat`
+- **修改规则** → 先读 `rules/README.md` 和 `rules/rules-manifest.json` → 编辑目标规则源文件 → 双击 `sync-to-editors-only.bat`
+- **新增规则文件** → 更新 `rules/rules-manifest.json` 和 `rules/README.md`
 - **修改工作流** → 编辑 `workflows/*.md` → 双击 `sync-to-editors-only.bat`
 - **新增大章节或新工作流** → 同步更新 `rules/README.md` 或 `workflows/README.md`
 - **版本控制**：通过 Git 管理变更历史，可追溯、可回滚

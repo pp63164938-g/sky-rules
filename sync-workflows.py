@@ -34,6 +34,7 @@ SOURCE_WORKFLOW_EDIT_MARKER = "Edit the source workflow, then sync again."
 
 SRC_WORKFLOWS = ROOT / "workflows"
 SRC_RULES = ROOT / "rules"
+RULES_MANIFEST = SRC_RULES / "rules-manifest.json"
 SRC_SKILLS = ROOT / "skills"
 CONFIG_TARGET_FILES = [ROOT / "sync-targets.json", ROOT / "sync-targets.local.json"]
 CONFIG_WARNINGS: list[str] = []
@@ -142,25 +143,25 @@ BUILTIN_SYNC_MAP = [
     },
     {
         "name": "Antigravity 规则",
-        "src": SRC_RULES / "global-rules.md",
+        "src": RULES_MANIFEST,
         "dst": GEMINI_RULES_FILE,
-        "mode": "file",
+        "mode": "assembled_rules",
         "exact_env": ["SKY_RULES_GEMINI_RULES_FILE"],
         "base_env": ["SKY_RULES_GEMINI_HOME"],
         "detect": GEMINI_HOME,
     },
     {
         "name": "Windsurf 全局规则",
-        "src": SRC_RULES / "global-rules.md",
+        "src": RULES_MANIFEST,
         "dst": WINDSURF_RULES_FILE,
-        "mode": "file",
+        "mode": "assembled_rules",
         "exact_env": ["SKY_RULES_WINDSURF_RULES_FILE"],
         "base_env": ["SKY_RULES_WINDSURF_HOME"],
         "detect": WINDSURF_HOME,
     },
     {
         "name": "Codex 全局规则",
-        "src": SRC_RULES / "global-rules.md",
+        "src": RULES_MANIFEST,
         "dst": CODEX_AGENTS_FILE,
         "mode": "codex_rules",
         "exact_env": ["SKY_RULES_CODEX_AGENTS_FILE"],
@@ -205,7 +206,7 @@ def get_config_target_path(item: dict[str, object], config_path: Path) -> Path:
 
 def is_file_mode(mode: str) -> bool:
     """判断同步模式是否输出到单文件。"""
-    return mode in {"file", "codex_rules"}
+    return mode in {"file", "assembled_rules", "codex_rules"}
 
 
 def normalize_config_target(item: object, config_path: Path) -> dict[str, object]:
@@ -214,7 +215,7 @@ def normalize_config_target(item: object, config_path: Path) -> dict[str, object
         raise ValueError(f"{config_path.name}: targets 必须是对象数组")
 
     mode = str(item.get("mode", "")).strip()
-    if mode not in {"mirror", "file", "codex_rules", "agents_skills"}:
+    if mode not in {"mirror", "file", "assembled_rules", "codex_rules", "agents_skills"}:
         raise ValueError(f"{config_path.name}: 不支持的 mode: {mode}")
 
     name = str(item.get("name", "")).strip()
@@ -298,6 +299,7 @@ def git_commit_and_push() -> None:
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
+    text = text.lstrip("\ufeff")
     if not text.startswith("---"):
         return {}, text
 
@@ -312,6 +314,52 @@ def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
         key, value = line.split(":", 1)
         metadata[key.strip()] = value.strip().strip('"').strip("'")
     return metadata, parts[2].lstrip()
+
+
+def get_rules_source_files(src: Path) -> list[Path]:
+    """读取全局规则源文件列表，支持 manifest 拼接和单文件兼容。"""
+    if src.suffix.lower() != ".json":
+        return [src]
+
+    raw_config = json.loads(src.read_text(encoding="utf-8"))
+    raw_rules = raw_config.get("rules") if isinstance(raw_config, dict) else raw_config
+    if not isinstance(raw_rules, list):
+        raise ValueError(f"{src.name}: rules 必须是数组")
+
+    rule_files: list[Path] = []
+    for index, raw_rule in enumerate(raw_rules, start=1):
+        if isinstance(raw_rule, str):
+            relative_path = raw_rule
+        elif isinstance(raw_rule, dict):
+            relative_path = str(raw_rule.get("path", "")).strip()
+        else:
+            raise ValueError(f"{src.name}: rules[{index}] 必须是字符串或对象")
+
+        if not relative_path:
+            raise ValueError(f"{src.name}: rules[{index}].path 不能为空")
+
+        rule_file = (src.parent / relative_path).resolve()
+        if not rule_file.exists():
+            raise FileNotFoundError(f"{src.name}: 规则源文件不存在: {relative_path}")
+        rule_files.append(rule_file)
+
+    return rule_files
+
+
+def build_rules_content(src: Path, strip_frontmatter: bool = False) -> str:
+    """按规则清单拼接全局规则内容。"""
+    parts: list[str] = []
+    for index, rule_file in enumerate(get_rules_source_files(src)):
+        text = rule_file.read_text(encoding="utf-8-sig")
+
+        if index == 0 and not strip_frontmatter:
+            parts.append(text.rstrip())
+            continue
+
+        _, body = split_frontmatter(text)
+        parts.append(body.rstrip())
+
+    return "\n\n".join(part for part in parts if part) + "\n"
 
 
 def slugify(value: str) -> str:
@@ -606,17 +654,32 @@ def sync_file(name: str, src: Path, dst: Path) -> None:
     print(f"  OK {name}: 已同步")
 
 
+def sync_assembled_rules(name: str, src: Path, dst: Path, strip_frontmatter: bool = False) -> None:
+    """拼接 rules manifest 中的规则文件并同步到单文件目标。"""
+    if not src.exists():
+        print(f"  SKIP {name}: 源文件不存在 ({src})")
+        return
+
+    content = build_rules_content(src, strip_frontmatter=strip_frontmatter)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists() and dst.read_text(encoding="utf-8", errors="replace") == content:
+        print(f"  SKIP {name}: 无变更")
+        return
+
+    dst.write_text(content, encoding="utf-8", newline="\n")
+    print(f"  OK {name}: 已同步")
+
+
 def sync_codex_rules(name: str, src: Path, dst: Path) -> None:
     """同步全局规则到 Codex 的用户级 AGENTS.md。"""
     if not src.exists():
         print(f"  SKIP {name}: 源文件不存在 ({src})")
         return
 
-    text = src.read_text(encoding="utf-8")
-    _, body = split_frontmatter(text)
+    body = build_rules_content(src, strip_frontmatter=True)
     content = (
         f"<!-- {GENERATED_BY_MARKER}. Generated from {format_source_path(src)}. "
-        "Edit the source file, then sync again. -->\n\n"
+        "Edit the source files, then sync again. -->\n\n"
         f"{body.lstrip()}"
     )
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -693,6 +756,8 @@ def sync_all(include_missing_targets: bool = False) -> None:
             sync_mirror(item["name"], item["src"], item["dst"], item["pattern"], item.get("exclude"))
         elif mode == "file":
             sync_file(item["name"], item["src"], item["dst"])
+        elif mode == "assembled_rules":
+            sync_assembled_rules(item["name"], item["src"], item["dst"])
         elif mode == "codex_rules":
             sync_codex_rules(item["name"], item["src"], item["dst"])
         elif mode == "agents_skills":
@@ -753,11 +818,13 @@ def run_doctor() -> None:
     print_config_warnings()
 
     print("[源文件]")
-    rules_file = SRC_RULES / "global-rules.md"
-    if rules_file.exists():
-        print(f"  OK 全局规则: {rules_file}")
-    else:
-        print(f"  FAIL 全局规则不存在: {rules_file}")
+    rules_file = RULES_MANIFEST
+    try:
+        rule_source_files = get_rules_source_files(rules_file)
+        print(f"  OK 全局规则清单: {rules_file} ({len(rule_source_files)} 个源文件)")
+    except (OSError, ValueError, FileNotFoundError, json.JSONDecodeError) as error:
+        rule_source_files = []
+        print(f"  FAIL 全局规则清单异常: {error}")
 
     if SRC_WORKFLOWS.exists():
         workflow_count = len(iter_sync_source_files(SRC_WORKFLOWS, "*.md", ["README.md"]))
@@ -771,7 +838,7 @@ def run_doctor() -> None:
     target_results = [diagnose_target(item) for item in SYNC_MAP]
 
     config_ok = not CONFIG_WARNINGS
-    source_ok = rules_file.exists() and SRC_WORKFLOWS.exists() and workflow_count > 0
+    source_ok = bool(rule_source_files) and SRC_WORKFLOWS.exists() and workflow_count > 0
     targets_ok = "fail" not in target_results
     skip_count = target_results.count("skip")
     print()
