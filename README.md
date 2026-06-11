@@ -19,6 +19,8 @@ sky-rules/
 │   ├── base.*.md           # 基础工作流
 │   ├── kl.*.md             # Kunlun 项目专用工作流
 │   └── more-tool.*.md      # 工具类工作流
+├── scripts/                # 仓库维护脚本
+│   └── check-rules.py      # 规则结构、索引和同步产物自检
 ├── sync-workflows.py       # 同步脚本（核心逻辑）
 ├── sync-targets.example.json # 新增编辑器同步目标配置示例
 ├── sync-to-editors-only.bat            # 双击：仅同步到编辑器，不执行 Git 操作
@@ -34,6 +36,7 @@ sky-rules/
 | `README.md` | 人 / AI | 仓库维护手册，说明目录结构、同步方式、接入方式和同步目标 |
 | `rules/README.md` | 人 / AI | 全局规则维护索引，说明规则归属、章节策略、写法模板和维护自检 |
 | `workflows/README.md` | 人 / AI | 工作流维护索引，说明工作流命名、归属、结构和扩展标准 |
+| `scripts/check-rules.py` | 人 / AI | 规则仓库自检入口，检查 manifest、README 索引、拼接结果和同步产物 |
 
 新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。全局规则细则按主题拆在 `rules/core/`、`rules/scenes/`、`rules/projects/` 中，并由 `rules/rules-manifest.json` 统一拼接；入口文件只做索引和流程说明。
 
@@ -61,7 +64,8 @@ sky-rules/
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标文件，禁止追加到无关文件末尾；新增规则文件或新工作流时更新对应 README 索引。
 4. 预览确认：AI 写入前必须先展示拟新增内容和插入位置，用户确认后再修改源文件。
-5. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认拼接规则和 Skills 已同步到目标工具。
+5. 自检验证：执行 `python3 scripts/check-rules.py`，确认 manifest、索引和拼接规则结构正确。
+6. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认拼接规则和 Skills 已同步到目标工具。
 
 ## 使用方式
 
@@ -73,6 +77,7 @@ sky-rules/
 | **Git 提交、推送并同步到编辑器** | `commit-push-and-sync-to-editors.bat` | `python sync-workflows.py` |
 | **只查看当前电脑会同步到哪里** | - | `python sync-workflows.py --print-targets` |
 | **新电脑接入体检（推荐首次执行）** | - | `python sync-workflows.py --doctor` |
+| **规则仓库自检（推荐每次规则变更后执行）** | - | `python scripts/check-rules.py` |
 | **强制预创建全部默认目标** | - | `python sync-workflows.py --no-git --include-missing-targets` |
 
 **同步内容：**
@@ -85,6 +90,39 @@ sky-rules/
 | `rules/rules-manifest.json` | `~/.gemini/GEMINI.md` | Antigravity 全局规则（按 manifest 拼接） |
 | `rules/rules-manifest.json` | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 全局规则（按 manifest 拼接） |
 | `rules/rules-manifest.json` | `~/.codex/AGENTS.md` | Codex 全局规则（按 manifest 拼接并去除 frontmatter） |
+
+### 规则仓库自检
+
+`scripts/check-rules.py` 用于在同步前检查规则仓库是否还能闭环。它不会修改任何文件，只做结构和产物检查。
+
+自检范围：
+
+- `rules/rules-manifest.json` 是否结构正确、路径不重复、规则源文件存在
+- `rules/core/`、`rules/scenes/`、`rules/projects/` 下的规则文件是否都进入 manifest
+- `README.md`、`AGENTS.md`、`rules/README.md`、`workflows/base.update-rules.md` 是否能指向 manifest 和自检入口
+- 按 manifest 拼接后的全局规则是否仍包含关键红线、联调、样式、跨接口字段和同步验证规则
+- `sync-workflows.py` 是否仍支持 `assembled_rules`、`codex_rules` 和 `workflows/README.md` 排除
+- 已生成的 Codex `base-update-rules` Skill 是否能看到规则拆分定位和自检入口
+
+推荐顺序：
+
+```powershell
+python scripts/check-rules.py
+python sync-workflows.py --no-git
+python scripts/check-rules.py
+```
+
+闭环验收回执应至少包含：
+
+```text
+自检：python3 scripts/check-rules.py -> OK
+同步：python3 sync-workflows.py --no-git -> OK
+Codex 验证：AGENTS.md 已落盘，Skills 20 个，prompt-input 可见 base-debugging/base-docs/kl-gen-page
+二次自检：python3 scripts/check-rules.py -> OK
+提交状态：未提交 / 已提交 <commit>
+```
+
+如果出现 `WARN` 或 `FAIL`，必须摘出关键原因和影响范围，禁止只回复“已完成”。
 
 **同步特性：**
 - 使用 Python `shutil` 处理文件复制，兼容中文路径
@@ -252,9 +290,9 @@ python sync-workflows.py --doctor
 > ⚠️ **核心原则：所有规则和工作流的修改，必须在 `sky-rules/` 仓库中进行，严禁直接修改编辑器目录下的文件。**
 > 编辑器目录中的文件是**同步产物**，直接修改会在下次同步时被覆盖丢失。
 
-- **修改规则** → 先读 `rules/README.md` 和 `rules/rules-manifest.json` → 编辑目标规则源文件 → 双击 `sync-to-editors-only.bat`
-- **新增规则文件** → 更新 `rules/rules-manifest.json` 和 `rules/README.md`
-- **修改工作流** → 编辑 `workflows/*.md` → 双击 `sync-to-editors-only.bat`
+- **修改规则** → 先读 `rules/README.md` 和 `rules/rules-manifest.json` → 编辑目标规则源文件 → 执行 `python3 scripts/check-rules.py` → 双击 `sync-to-editors-only.bat`
+- **新增规则文件** → 更新 `rules/rules-manifest.json` 和 `rules/README.md` → 执行 `python3 scripts/check-rules.py`
+- **修改工作流** → 编辑 `workflows/*.md` → 执行 `python3 scripts/check-rules.py` → 双击 `sync-to-editors-only.bat`
 - **新增大章节或新工作流** → 同步更新 `rules/README.md` 或 `workflows/README.md`
 - **版本控制**：通过 Git 管理变更历史，可追溯、可回滚
 - **多设备同步**：其他设备克隆仓库后运行同步脚本即可
