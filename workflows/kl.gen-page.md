@@ -287,6 +287,9 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **正解：** “编辑 / 删除 / 详情”等单行操作默认放在表格 header 左侧，通过 `show-select` 选中一条数据后操作。
      - ✅ 新增、导出、批量操作、生成、同步等页面级操作也默认放在 header 左侧。
      - ✅ 只有用户明确说“必须每行内联操作 / 保留表格操作列 / 每行展示编辑删除”，或业务确实无法通过选中行操作表达时，才允许使用操作列；使用前必须说明原因。
+     - ✅ 如果需求明确允许使用操作列，`columns` 末尾只写 `{ operateCol: true }`；`label`、`prop`、`fixed`、`disabledAuth` 等默认属性由 `sky-table-pagination` 统一补齐，除非需求明确要求覆盖。
+     - ✅ 行内操作插槽使用 `#col_operate`；未启用操作列时不要保留 `operateCol` 或 `#col_operate`。
+     - ✅ `src/components/dev-template/list-a.vue` / `list-b.vue` 中的操作列仅作为可选示例，页面生成默认仍按 header 左侧操作按钮模式克隆。
      - ✅ 如果使用操作列，优先按项目已有封装方式处理，例如 `com-table-operate`，不要随手堆多个裸 `el-button`。
    - 🔴 **雷区 13 补充：表头操作按钮顺序混乱**
      - ❌ 禁止把 `添加` 放在 `编辑 / 删除` 后面，导致列表页常规维护入口顺序不一致。
