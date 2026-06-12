@@ -57,6 +57,14 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        并在 `useSimpleSelecter` 中使用：
        `transform: data => getIdName2ValueLabelList(data ?? [])`
      - ✅ 只有接口返回结构不是标准 `id/name`，或需要保留额外字段、特殊 value 规则时，才允许按业务显式转换，并在代码附近说明原因。
+   - 🔴 **雷区 4 补充：标准下拉 Options 取项手写查找**
+     - ❌ 对已经符合 `CommonEnum` / 标准 `{ label, value }` 结构的下拉 Options，手写 `xxxOptions.find(optionItem => optionItem.value === value)` 获取选中项。
+     - ❌ 只为了读取选中项的额外字段，重新封装本地查找函数或重复写查找逻辑。
+     - ✅ **正解：** 必须优先复用项目公共方法：
+       `import { getListOption } from '@/components/common/form/utils'`
+       `const xxxOption = getListOption(value, xxxOptions)`
+     - ✅ 只需要展示 label 时，使用同位置公共方法 `getListOptionLabel(value, xxxOptions)`；需要读取单位、颜色、状态配置等额外字段时，先用 `getListOption` 获取完整 option，再读取对应字段。
+     - ✅ 只有 Options 不是标准 `{ label, value }` 结构，或匹配字段不是 `value` 时，才允许先显式转换成标准 Options；不要在业务文件里重复手写查找逻辑。
    - 🔴 **雷区 4 补充：下拉 Options 未显式声明类型**
      - ❌ `com-form-select` 使用的 `options` 变量不声明类型，或 `useSimpleSelecter` 不传泛型，导致类型无法和 `com-form-select` 的 `options?: CommonEnum` 对齐。
       - ✅ **远程下拉正解：** 使用 `useSimpleSelecter<CommonEnumItem>` 或明确的业务下拉项类型，并按接口字段链路命名：
