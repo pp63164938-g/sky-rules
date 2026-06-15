@@ -48,7 +48,35 @@ description: 根据项目文档规范执行（优先读取 docs 目录；接口�
    - 图片、附件、流程图等资源必须根据正文包中的资源 URL、`metaUrl` 或插件数据继续下载解析；不能只凭附件名或节点名推断图片内容。资源不可访问时，明确说明需要补充可访问请求、截图或允许使用浏览器会话。
    - 回复中禁止回显完整 token/cookie；任务完成后提醒用户刷新或失效敏感 token。
 
-4. **读取相关文档**
+4. **读取 GitLab 预览工具文档链接**
+   - 当用户提供 `gitlabpv.tyhdev.com/#/{projectId}/{path}` 这类 GitLab 预览工具链接时，默认优先通过预览工具后端接口读取原始文档内容，不直接抓网页 DOM。
+   - 解析链接规则：
+     - 从 hash 中去掉开头的 `#/`。
+     - 第一个 `/` 前为 `projectId`。
+     - 第一个 `/` 后为文件路径，必须先执行 URL decode。
+   - 已知正文接口优先尝试：
+     - `GET https://gitlabpv.tyhdev.com/api/gitlab/file`
+     - Query 参数使用 `project_id={projectId}`、`path={decodedPath}`。
+     - 读取返回 JSON 中的 `content` 作为 Markdown 正文；`content_b64` 只在需要下载或解析二进制内容时使用。
+   - 命令行读取时必须使用 URL 编码参数，避免中文、空格、`/`、`[]` 等字符破坏请求：
+     ```bash
+     curl -sS --compressed --connect-timeout 10 --max-time 30 \
+       --get 'https://gitlabpv.tyhdev.com/api/gitlab/file' \
+       --data-urlencode 'project_id={projectId}' \
+       --data-urlencode 'path={decodedPath}' \
+       | jq -r '.content'
+     ```
+   - 文档内图片、附件、HTML/CSS 等相对资源需要继续读取时，按当前文档路径解析相对路径，并优先请求：
+     - `GET https://gitlabpv.tyhdev.com/api/gitlab/raw?project_id={projectId}&path={resolvedPath}`
+   - 只有以下场景才使用浏览器辅助：
+     - `/api/gitlab/file` 返回 401、403、登录页、网络受限或需要复用用户浏览器登录态。
+     - 需要核对渲染后的图片、表格、流程图、HTML 页面效果。
+     - 后端接口返回内容与页面展示明显不一致。
+   - 禁止把 `gitlabpv.tyhdev.com` 的 SPA 首页 HTML 当作文档正文来源；该页面正文由前端接口异步加载，直接抓 HTML 通常只会得到空壳。
+   - 如果接口不可访问、超时、无权限或缺少 GitLab token，必须明确说明读取失败原因，并要求用户提供可访问链接、复制出的正文、GitLab token、或浏览器中对应 XHR 请求信息。
+   - 如果需要 token，优先使用 `X-GitLab-Token` 请求头；回复中禁止回显完整 token，任务完成后提醒用户刷新或失效敏感 token。
+
+5. **读取相关文档**
    - 根据用户的具体请求（FEATURE, BUG, QUESTION），选择性读取最相关的文档。
      - 例如：如果是 UI 任务，优先读取 `docs/spec/web` 或 `docs/design`。
      - 例如：如果是后端任务，优先读取 `docs/spec/server` 或 `docs/api`。
@@ -56,7 +84,7 @@ description: 根据项目文档规范执行（优先读取 docs 目录；接口�
    - 务必读取 `docs/README.md` 或入口文档以了解全貌。
    - 项目本地接口文档只能作为补充线索；当线上接口文档可访问时，接口 URL、请求参数、响应字段名、字段类型等数据契约以线上真实接口定义为准；页面文案、字段标题、展示顺序和交互以需求文档 / 原型 / 用户最新说明为准。
 
-5. **执行任务**
+6. **执行任务**
    - **场景 A：回答问题**
      - 基于文档内容回答用户问题。
      - 引用文档中的具体章节作为依据。
@@ -72,7 +100,7 @@ description: 根据项目文档规范执行（优先读取 docs 目录；接口�
      - 禁止根据命名习惯猜测接口 URL、Query 参数、Body 字段或响应字段。
      - 如果接口字段说明与需求文档页面文案不一致，必须说明差异；代码字段名按接口文档，页面展示文案按需求文档 / 原型 / 用户最新说明。
 
-6. **自我检查**
+7. **自我检查**
    - 确认最终结果（答案或代码）是否违反了读取到的文档中的任何硬性规定。
    - 确认接口相关结论是否已经标明文档来源环境。
    - 确认没有把项目已有代码里的请求参数当作文档结论，除非文档明确一致。
