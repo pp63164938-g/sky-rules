@@ -352,6 +352,29 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 🔴 **雷区 15：画蛇添足的 showOverflowTooltip**
      - ❌ 在 `useTable` 的 `columns` 配置中，手动为普通文本列写上 `showOverflowTooltip: true`。
      - ✅ **正解：** `sky-table-pagination` 底层默认已为所有列开启了超出截断与 Tooltip 提示功能，**无需且不应显式声明**该属性，除非确需设为 `false` 来关闭提示或允许换行。
+   - 🔴 **雷区 15 补充：纯文本展示未考虑长文本**
+     - ❌ 在卡片、详情、弹窗只读区、表格自定义列插槽、下拉 option、业务列表项等位置，直接写 `{{ xxx }}`、`<span>{{ xxx }}</span>` 或普通 `div + 文本`，没有考虑接口返回文本过长导致挤压、换行撑高、遮挡按钮或破坏布局。
+     - ❌ 为了省事只写 CSS `overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`，导致用户看不到完整内容，也没有统一 Tooltip 体验。
+     - ✅ **正解：** 纯文本展示只要存在长度不确定的接口字段、用户输入内容、名称、编码、备注、说明、国家地区、客户 / 供应商名称等，都必须优先使用 `sky-ellipsis-tooltip` 承载。
+     - ✅ 单行展示默认使用 `sky-ellipsis-tooltip`；需求明确允许多行摘要时，使用 `:line-clamp="行数"`，不要让文本无限换行撑开布局。
+     - ✅ `content-class` 用于承接当前业务文本样式；如果需要限制浮层宽度，再通过 `tooltip-class` 设置，例如 `max-w-240`。禁止为了省事给每个文本手写一套局部 tooltip。
+     - ✅ 普通 `sky-table-pagination` 文本列已内置超出截断与 Tooltip，不需要额外包一层；但如果使用 `#col_xxx` 自定义列插槽后自行拼纯文本，仍要按本规则使用 `sky-ellipsis-tooltip`。
+     - ✅ 静态短文案、固定按钮文案、固定 label、已由 `el-text truncated` / 表格内置 tooltip / 业务组件内部明确处理过省略的场景，不需要重复包裹。
+
+     ```vue
+     <!-- ❌ 禁止：接口文本长度不确定，却直接裸展示 -->
+     <span class="xxx-card__name">{{ row.TODO业务字段 }}</span>
+
+     <!-- ✅ 正确：纯文本展示优先使用 sky-ellipsis-tooltip -->
+     <sky-ellipsis-tooltip content-class="xxx-card__name" tooltip-class="max-w-240">
+         {{ row.TODO业务字段 || '-' }}
+     </sky-ellipsis-tooltip>
+
+     <!-- ✅ 正确：多行摘要使用 line-clamp 控制高度 -->
+     <sky-ellipsis-tooltip :line-clamp="2" content-class="xxx-card__desc" tooltip-class="max-w-360">
+         {{ row.TODO业务说明 || '-' }}
+     </sky-ellipsis-tooltip>
+     ```
    - 🔴 **雷区 15 补充：表格列插槽入口混用**
      - ❌ 使用 `<template #col_xxx>` 自定义列时，又在对应 `columns` 配置里追加 `slot: true`。
      - ❌ 未查看 `sky-table-pagination` 源码，只凭 Element Plus 或其他项目经验猜测列插槽写法。
