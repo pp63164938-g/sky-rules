@@ -65,16 +65,18 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        `const xxxOption = getListOption(value, xxxOptions)`
      - ✅ 只需要展示 label 时，使用同位置公共方法 `getListOptionLabel(value, xxxOptions)`；需要读取单位、颜色、状态配置等额外字段时，先用 `getListOption` 获取完整 option，再读取对应字段。
      - ✅ 只有 Options 不是标准 `{ label, value }` 结构，或匹配字段不是 `value` 时，才允许先显式转换成标准 Options；不要在业务文件里重复手写查找逻辑。
-   - 🔴 **雷区 4 补充：表格枚举标签列优先使用 com-map-tag**
-     - ❌ 对表格中的枚举标签列，明明 `src/components/dev-template/list-a.vue` / `list-b.vue` 已提供 `com-map-tag` 示例，却手写 `el-tag + getListOptionLabel + 兜底值`。
-     - ❌ 只为了区分标签颜色，额外编写 `getXxxTagType(value)`、多段 `if` 分支或本地映射函数，导致和模板推荐的标签映射组件重复。
-     - ✅ **正解：** 只要表格列的需求是“枚举值映射为标签文案 / 标签颜色”，必须优先使用 `com-map-tag`，并把 label、value、type/color 等配置集中放在对应 Options / TagMap 中。
+   - 🔴 **雷区 4 补充：枚举标签展示优先使用 com-map-tag**
+     - ❌ 对枚举 / 状态标签展示，明明项目已有 `com-map-tag`，却手写 `el-tag + getListOptionLabel + 兜底值`。
+     - ❌ 只为了区分标签颜色，额外编写 `getXxxTagType(value)`、多段 `if` 分支或本地映射函数，导致和项目推荐的标签映射组件重复。
+     - ✅ **正解：** 只要需求是“枚举值映射为标签文案 / 标签颜色”，必须优先使用 `com-map-tag`，并把 label、value、type/color 等配置集中放在对应 Options / TagMap 中。
+     - ✅ `com-map-tag` 不局限于列表页；表格列、下拉 option、详情页、弹窗只读状态标签等纯展示位置都应优先使用。
      - ✅ `getListOptionLabel(value, xxxOptions)` 只用于普通文本枚举展示；一旦展示形态是 tag、状态标签、颜色标签，优先级低于 `com-map-tag`。
      - ✅ `com-map-tag` 已内置空值展示、命中映射展示、未命中展示原始值等逻辑，禁止在业务页面重复手写同类兜底。
-     - ✅ 如果标签列还包含额外业务交互，例如点击跳转、带确认操作、复杂插槽内容，才允许不用 `com-map-tag`，但必须说明原因并仍按模板列插槽结构实现。
+     - ✅ `com-map-tag` 只负责展示，不作为表单控件；需要 `v-model`、校验、提交的字段，应使用 `com-form-select`、`com-form-radio` 等表单组件。禁用态只读表单字段，优先使用禁用态表单组件复用同一份 Options。
+     - ✅ 如果标签展示还包含额外业务交互，例如点击跳转、带确认操作、复杂插槽内容，才允许不用 `com-map-tag`，但必须说明原因并仍按模板列插槽结构实现。
 
      ```vue
-     <!-- ❌ 禁止：普通枚举标签列手写 el-tag 和兜底链 -->
+     <!-- ❌ 禁止：普通枚举标签展示手写 el-tag 和兜底链 -->
      <template #col_xxxStatus="{ value }">
          <el-tag :type="getXxxTagType(value)">
              {{ getListOptionLabel(value, xxxStatusOptions) ?? value ?? '-' }}
@@ -84,6 +86,12 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      <!-- ✅ 正确：标签映射交给项目约定的 com-map-tag -->
      <template #col_xxxStatus="{ value }">
          <com-map-tag :value="value" :map="xxxStatusOptions" />
+     </template>
+
+     <!-- ✅ 正确：下拉 option 中的状态标签也复用 com-map-tag -->
+     <template #option="optionItem">
+         <span>{{ optionItem.label }}</span>
+         <com-map-tag :value="optionItem.status" :map="xxxStatusOptions" />
      </template>
      ```
    - 🔴 **雷区 4 补充：下拉 Options 未显式声明类型**
@@ -217,6 +225,14 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **正解：** 使用 `com-form-input` 前必须先确认组件默认值；当前组件普通输入框默认 `maxlength: 120`，`type="textarea"` 默认 `maxlength: 500`，且 textarea 默认带 `autosize`。
      - ✅ 需求限制与组件默认值一致时，不要重复声明；只有需求限制不同于组件默认值，或业务需要显示字数统计等额外行为时，才显式传入对应 props。
      - ✅ 页面生成时遇到 `com-form-*` 的 `required`、`maxlength`、`clearable`、`autosize` 等常见能力，必须先读组件源码或类型定义，确认默认值后再决定是否传参。
+   - 🔴 **雷区 10 补充：标准表单上传优先使用 com-form-upload**
+     - ❌ 表单 / 弹窗内出现标准上传字段时，未检查公共组件就直接手写 `el-upload`、文件类型校验、文件大小校验和数量限制。
+     - ❌ 上传接口 URL 未确认时，为了套公共组件伪造 `url` 或把占位地址写成确定逻辑。
+     - ✅ **正解：** 标准表单上传场景必须先检查并优先使用 `com-form-upload`，复用其 `sky-form-item`、token header、`typeList`、`limitSize`、数量限制和成功提示等公共能力。
+     - ✅ 使用前必须先读取 `src/components/common/form/com-form-upload.vue` 源码或类型定义，确认当前需求需要传哪些 props；公共组件已覆盖的校验，不要在业务文件重复手写。
+     - ✅ 后端已确认上传接口时，`url` 必须使用真实上传接口；文件类型优先用 `typeList` 表达，文件大小优先用 `limitSize` 表达，数量限制优先走组件透传能力。
+     - ✅ 后端未提供上传接口时，禁止伪造 `url`；如静态阶段需要保留上传入口，应保留用户可感知占位或本地选择态，并标记 `TODO待联调_附件上传接口`，最终回复中说明缺口。
+     - ✅ 只有复杂自定义上传 UI、纯本地临时选择、拖拽排序等公共组件无法覆盖的场景，才允许局部使用 `el-upload`，并在代码附近说明原因。
    - 🔴 **雷区 10 补充：useForm 泛型兜底**
      - ❌ 弹窗表单中禁止为了省事写 `useForm<Omix>({...})`，这会抹掉表单字段结构，降低类型约束。
      - ✅ **正解：** 标准弹窗按 `dev-template/dialog-update.vue` 使用 `useForm({...})`，让 TypeScript 根据初始化对象自动推断字段类型。
