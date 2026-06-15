@@ -71,6 +71,7 @@ description: 工作流用途说明
 | --- | --- |
 | 新增 / 优化全局规则 | `base.update-rules.md` |
 | 根据接口文档联调 | `base.debugging.md`、`base.docs.md` |
+| 根据需求文档闭环推进开发 | `base.requirement-dev-closed-loop.md` |
 | 生成 Kunlun 页面 | `kl.gen-page.md` |
 | 管理 Kunlun 菜单权限 | `kl.menu-manage.md` |
 | 生成提交信息并提交 | `base.git-commit-message.md` |
