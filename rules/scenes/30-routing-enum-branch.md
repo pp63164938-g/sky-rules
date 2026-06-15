@@ -189,6 +189,7 @@ function getFilteredItems(type, items) {
 **正向精准判断优先**：
 
 - 当业务规则命中的是某几个明确枚举值 / 状态值时，必须正向列出这些值，例如 `A || B` 或常量集合 `includes(A, B)`；禁止用 `value !== X`、`!isXxx`、“非 A” 等取反方式，把剩余值偷懒归为同一业务场景。
+- 正向判断不是只针对字段名像 `status` / `type` 的变量。只要条件表达的是“命中某个明确业务场景 / 业务分支 / 业务能力 / 业务来源”，无论字段名是 `source`、`mode`、`flag`、`code`、`key`、`bringType` 还是其他业务字段，都必须优先正向判断命中的明确值；禁止用 `!==`、`!isXxx` 或“非目标值”把未枚举的其他业务场景静默吞掉。
 - 只有业务本身明确是“排除某类后的全部剩余情况”，或需求 / 接口文档明确写明“除 X 外均按 Y 处理”时，才允许使用取反判断；代码附近必须写明依据和影响范围。
 - 枚举值未确认时，禁止通过反向判断绕过缺失枚举；必须先确认真实 value，或用 `TODO待联调_值_用途描述` 标记后再做正向判断。
 - 多个明确类型共享同一逻辑时，优先使用有业务语义的常量集合表达命中范围；后续新增枚举时只扩展集合，禁止让新增枚举自动落入旧的取反逻辑。
@@ -204,6 +205,17 @@ const TARGET_SCENE_TYPES = [TYPE_A, TYPE_B]
 
 function isTargetScene(type) {
     return TARGET_SCENE_TYPES.includes(type)
+}
+```
+
+```javascript
+// ❌ 禁止 - 当前只确认“目标来源”需要刷新，却用反向判断吞掉其他来源
+if (source !== TARGET_SOURCE) return
+refreshList()
+
+// ✅ 正确 - 明确命中目标业务来源时才刷新
+if (source === TARGET_SOURCE) {
+    refreshList()
 }
 ```
 
