@@ -65,6 +65,27 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
        `const xxxOption = getListOption(value, xxxOptions)`
      - ✅ 只需要展示 label 时，使用同位置公共方法 `getListOptionLabel(value, xxxOptions)`；需要读取单位、颜色、状态配置等额外字段时，先用 `getListOption` 获取完整 option，再读取对应字段。
      - ✅ 只有 Options 不是标准 `{ label, value }` 结构，或匹配字段不是 `value` 时，才允许先显式转换成标准 Options；不要在业务文件里重复手写查找逻辑。
+   - 🔴 **雷区 4 补充：表格枚举标签列优先使用 com-map-tag**
+     - ❌ 对表格中的枚举标签列，明明 `src/components/dev-template/list-a.vue` / `list-b.vue` 已提供 `com-map-tag` 示例，却手写 `el-tag + getListOptionLabel + 兜底值`。
+     - ❌ 只为了区分标签颜色，额外编写 `getXxxTagType(value)`、多段 `if` 分支或本地映射函数，导致和模板推荐的标签映射组件重复。
+     - ✅ **正解：** 只要表格列的需求是“枚举值映射为标签文案 / 标签颜色”，必须优先使用 `com-map-tag`，并把 label、value、type/color 等配置集中放在对应 Options / TagMap 中。
+     - ✅ `getListOptionLabel(value, xxxOptions)` 只用于普通文本枚举展示；一旦展示形态是 tag、状态标签、颜色标签，优先级低于 `com-map-tag`。
+     - ✅ `com-map-tag` 已内置空值展示、命中映射展示、未命中展示原始值等逻辑，禁止在业务页面重复手写同类兜底。
+     - ✅ 如果标签列还包含额外业务交互，例如点击跳转、带确认操作、复杂插槽内容，才允许不用 `com-map-tag`，但必须说明原因并仍按模板列插槽结构实现。
+
+     ```vue
+     <!-- ❌ 禁止：普通枚举标签列手写 el-tag 和兜底链 -->
+     <template #col_xxxStatus="{ value }">
+         <el-tag :type="getXxxTagType(value)">
+             {{ getListOptionLabel(value, xxxStatusOptions) ?? value ?? '-' }}
+         </el-tag>
+     </template>
+
+     <!-- ✅ 正确：标签映射交给项目约定的 com-map-tag -->
+     <template #col_xxxStatus="{ value }">
+         <com-map-tag :value="value" :map="xxxStatusOptions" />
+     </template>
+     ```
    - 🔴 **雷区 4 补充：下拉 Options 未显式声明类型**
      - ❌ `com-form-select` 使用的 `options` 变量不声明类型，或 `useSimpleSelecter` 不传泛型，导致类型无法和 `com-form-select` 的 `options?: CommonEnum` 对齐。
       - ✅ **远程下拉正解：** 使用 `useSimpleSelecter<CommonEnumItem>` 或明确的业务下拉项类型，并按接口字段链路命名：
