@@ -127,6 +127,10 @@
 6. 禁止跨模块借用专属变量；某业务模块私有的 `--xxx-*` 变量不能被其他模块直接拿来当全局变量使用，除非已经被项目明确定位为跨模块公共变量。
 7. 禁止为了单个页面随手新增全局变量；只有跨页面复用、语义稳定且用户确认需要沉淀时，才允许补充公共变量。
 8. 交付前必须回看本次新增 / 修改样式中的硬编码颜色和常用尺寸，确认没有遗漏可直接复用的公共变量；如果存在保留的硬编码，应能说明是单次设计专属值或局部变量不适用。
+9. 使用 CSS 变量前必须同时确认“存在性、语义、作用对象”三件事：变量在当前项目或组件上下文中真实存在；变量命名语义与使用场景一致；变量适用于当前 CSS 属性。禁止只因为变量值接近或名字里包含颜色含义，就直接用于不匹配的属性。
+10. 背景 / 填充类变量不能随意拿来当文字色、边框色或图标色；文字色、背景色、边框色、状态色必须优先选择语义匹配的变量。例如填充背景变量只适合 `background` / `background-color`，不应作为按钮文字色使用。
+11. 覆盖 Element Plus、`sky-*`、`com-*` 等组件样式时，必须先查组件已有变量命名和状态变量，包括默认、hover、active、disabled 等状态。若组件内部通过 `--xxx-text-color`、`--xxx-hover-text-color` 等变量控制样式，应优先覆盖组件变量，而不是只写普通 `color` / `background` 后假定能生效。
+12. IDE、浏览器 DevTools 或构建结果提示 CSS 变量未定义时，必须立刻回查变量来源，改用项目已确认存在且语义匹配的变量，或在局部提供明确 fallback。禁止忽略未定义提示继续交付。
 
 **错误示例**：
 
@@ -145,6 +149,36 @@
 .xxx-card {
     color: var(--primary-text-color);
     border: 1px solid var(--line-color);
+}
+```
+
+**变量语义示例**：
+
+```scss
+/* ❌ 禁止：填充背景变量语义不等于按钮文字白色 */
+.xxx-button {
+    --xxx-button-text-color: var(--xxx-fill-blank);
+}
+
+/* ✅ 正确：使用已确认的文字白色变量 */
+.xxx-button {
+    --xxx-button-text-color: var(--xxx-color-white);
+}
+```
+
+**组件变量示例**：
+
+```scss
+/* ❌ 禁止：组件内部走变量控制时，只写普通 color */
+.xxx-button {
+    color: var(--xxx-color-white);
+}
+
+/* ✅ 正确：按组件变量同时覆盖对应状态 */
+.xxx-button {
+    --xxx-button-text-color: var(--xxx-color-white);
+    --xxx-button-hover-text-color: var(--xxx-color-white);
+    --xxx-button-active-text-color: var(--xxx-color-white);
 }
 ```
 
