@@ -123,6 +123,15 @@ v-if="SMS_VOICE_PRODUCT_TYPES.includes(rule.productType)"
 
 **核心原则**：当条件字段是枚举类型时，必须显式判断每个已知枚举值，禁止只判断其中一个值，再把剩余情况默认当作另一个枚举值处理，除非该默认分支确实是业务兜底并写明原因。
 
+**跨语法一致要求**：
+
+- 业务枚举、状态、类型、来源、模式、权限、按钮状态、图标类型、样式状态等条件分支，不区分写在 Vue template、JS / TS、TSX / JSX、computed、formatter、render 函数或映射函数中，都必须遵守同一套分支规则。
+- 禁止只判断一个已知业务值，再用 `else`、`v-else`、`switch default`、三元表达式的 `:` 分支、映射对象的默认值、`??` / `||` 兜底，把其他未枚举值默认渲染成另一个已知业务表现。
+- 已确认枚举值必须逐个显式判断；未知值只能走“未知 / 空渲染 / 禁用 / TODO 待确认 / 异常提示”等真正兜底分支，不能静默复用某个业务分支。
+- `else`、`v-else`、`default` 只允许用于真实二元 UI 状态，例如有数据 / 无数据、加载中 / 非加载中、展开 / 收起、选中 / 未选中；如果条件来源是业务枚举或状态值，则默认不按真实二元处理。
+- `switch default` 只能表达未知或异常兜底，禁止把 default 当作某个确定业务类型处理。
+- TSX / JSX 中的三元渲染同样受限：禁止写成 `type === TYPE_A ? <IconA /> : <IconB />` 来承载业务枚举；应显式判断 `TYPE_A`、`TYPE_B`，未知值返回 `null` 或明确兜底 UI。
+
 ```javascript
 // ❌ 禁止：只判断 A，剩余情况默认当 B
 if (targetType === TARGET_TYPE_A) {
@@ -146,12 +155,42 @@ if (targetType === TARGET_TYPE_B) {
 return []
 ```
 
+```tsx
+// ❌ 禁止 - TSX 三元把非 A 都渲染成 B
+return type === TYPE_A ? <IconA /> : <IconB />
+
+// ✅ 正确 - TSX 中同样显式判断已知枚举
+if (type === TYPE_A) {
+    return <IconA />
+}
+
+if (type === TYPE_B) {
+    return <IconB />
+}
+
+return null
+```
+
+```vue
+<!-- ❌ 禁止 - Vue template 中用 v-else 吞掉未知业务类型 -->
+<XxxIconA v-if="type === TYPE_A" />
+<XxxIconB v-else />
+
+<!-- ✅ 正确 - 已知枚举显式判断 -->
+<XxxIconA v-if="type === TYPE_A" />
+<XxxIconB v-if="type === TYPE_B" />
+```
+
 **判断标准**：
 
+- 先判断这个条件是不是业务枚举 / 状态 / 类型 / 来源；如果是，就按枚举分支规则处理。
+- 不看语法形式，看业务含义；`v-else`、`else`、`default`、三元 `:`、映射默认值，本质上都是“剩余分支”。
 - 枚举值有明确含义时，每个已知值都要显式判断。
 - 禁止用“非 A 即 B”的写法处理业务枚举。
 - 默认分支只能用于真正的未知/兜底场景，并且必须有过程注释说明原因。
 - 未来新增枚举值时，应新增独立分支，而不是复用旧默认逻辑。
+- 新增一个枚举值时，页面是否会自动误入旧业务 UI；如果会，说明写法不合格。
+- 未知值是否被显性处理；如果未知值悄悄展示成 A/B/C 中某一种，说明写法不合格。
 
 # 条件分支编写规范
 
