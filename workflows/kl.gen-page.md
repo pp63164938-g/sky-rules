@@ -318,6 +318,71 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **正解：** 新增接口前必须先查看当前业务模块已有 API 文件，按业务域归属复用已有文件。例如页面属于“活动&推广管理”，且已存在 `src/api/csc/marketing-activities.ts`，则接口应优先追加到该文件中。
      - ✅ 只有当接口属于全新的独立业务域、预计会承载多个页面/一组完整能力，或用户明确要求拆分时，才允许新建 API 文件。
      - ✅ 如果没有充分依据新建 API 文件，也不要在 `src/api/xxx/index.ts` 中新增独立导出命名空间；应沿用既有模块导出，例如 `API.marketingActivities.xxx`。
+   - 🔴 **雷区 12 补充：API 入参类型与 URL 路径过度抽离**
+     - ❌ 禁止为了“看起来类型完整”，在 API 文件里给保存、新增、编辑、删除等一次性入参机械声明 `XxxParams`、`XxxReq`、`XxxDTO`。
+     - ❌ 禁止只因为对象字段多或结构复杂，就在 API 文件里额外抽一个独立入参类型；这会让 API 文件堆满只服务一次调用的类型，维护成本更高。
+     - ✅ **正解：** API 入参优先在函数定义处直接声明；能在定义处看懂的，就不要额外抽类型。
+     - ✅ 简单入参判断同时看两层数量：
+       - 函数只有 1 个入参对象；
+       - 对象属性数量不超过 4 个；
+       符合时直接写内联对象类型，并给关键字段补充 JSDoc。
+     - ✅ 对象属性超过 4 个、存在嵌套数组 / 嵌套对象、保存结构较复杂，或内联后影响阅读时，优先使用 `Omix`，不要为了描述完整结构单独声明 `XxxParams`。
+     - ✅ 复杂入参使用 `Omix` 时，必须在真正组装参数的位置写清字段用途、提交格式和关键转换规则，例如“部门 ID 逗号分隔”“提醒天数提交数字数组”等。
+     - ✅ 只有响应记录、列表 / 详情多处真实消费的数据结构、跨文件复用模型、或业务上必须稳定约束的结构，才允许声明独立类型。
+     - ✅ 一次性小响应、备用接口响应、小型下拉项响应，不要单独声明 `XxxRecord`；能内联就内联，复杂或临时结构可用 `Omix`。
+     - ❌ 禁止为同一组 API 抽 URL 前缀常量再拼接路径，例如 `XXX_URL_PREFIX + '/page'`。
+     - ✅ **正解：** API 函数里的 `url` 必须直接写完整接口路径，便于打开函数时立即确认真实请求地址。
+     - ✅ 只有跨环境配置、网关基地址、或项目已有统一请求基建要求时，才允许使用公共路径能力；普通业务接口路径不抽局部常量。
+
+     ```ts
+     // ❌ 禁止：一次性保存参数单独抽类型
+     type XxxSaveParams = {
+         id?: number | string
+         name: string
+         deptIds: string
+         status?: number
+         detailList: Array<Omix>
+     }
+
+     export function saveXxx(data: XxxSaveParams) {}
+
+     // ✅ 正确：复杂保存结构用 Omix，字段含义放在组装处
+     export function saveXxx(data: Omix) {}
+
+     /** 保存参数：部门 ID 逗号分隔，明细列表按接口结构提交 */
+     const params: Omix = {
+         /** 业务 ID，编辑时传入 */
+         id: formData.value.id,
+         /** 业务名称 */
+         name: formData.value.name,
+         /** 部门 ID，逗号分隔 */
+         deptIds: formData.value.deptIds.join(','),
+         /** 明细列表 */
+         detailList: formData.value.detailList
+     }
+     ```
+
+     ```ts
+     // ❌ 禁止：业务 API 局部抽前缀常量再拼路径
+     const XXX_URL_PREFIX = '/v2/xxx/yyy'
+
+     export function getXxxPage(data?: Omix) {
+         return request({
+             url: `${XXX_URL_PREFIX}/page`,
+             method: 'POST',
+             data
+         })
+     }
+
+     // ✅ 正确：函数定义处直接看到完整接口地址
+     export function getXxxPage(data?: Omix) {
+         return request({
+             url: '/v2/xxx/yyy/page',
+             method: 'POST',
+             data
+         })
+     }
+     ```
    - 🔴 **雷区 13：禁止直接把操作按钮放入表格操作列**
      - ❌ 禁止在标准列表页中直接新增 `operateCol`、`#col_operate`、`prop: 'operate'`，把“编辑 / 删除 / 详情”等操作默认放在表格最右侧操作列。
      - ❌ 原型图或截图里出现操作列，也不能直接照搬为行内操作；Kunlun 页面生成必须先服从 `src/components/dev-template/list-a.vue` 的 header 操作模式。
