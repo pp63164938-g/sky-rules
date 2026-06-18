@@ -49,6 +49,14 @@
 - **适用场景**：函数内部的逻辑说明、步骤解释、条件分支说明
 - **目的**：解释代码执行逻辑，便于阅读理解
 
+**注释内容边界**：
+
+- 代码注释只服务后续维护者理解业务含义、数据来源和分支原因，禁止把 AI 的自检过程、规则提醒、执行约束写进业务代码。
+- 禁止写“禁止使用 xxx”“按规则 xxx”“避免违反 xxx”这类给 AI 自己看的规则执行说明。
+- 禁止把本次排错、复盘、审查提醒、工具判断过程写成代码注释；这些内容应放在对话回复、方案文档或规则复盘中。
+- 禁止用注释替代最终回复中的发散点、待确认项或兜底说明；代码注释和用户交付说明是两件事。
+- 注释应写业务事实，例如接口字段来源、业务分支含义、特殊兜底原因。
+
 示例：
 
 ```javascript
@@ -64,6 +72,16 @@ async fetchGiftAmount() {
     const res = await api.getGiftAmount()
     this.giftAmount = res.data
 }
+```
+
+```javascript
+// ❌ 禁止 - 把规则提醒写进业务代码
+// 使用 code 判断，禁止用 name 文案做业务判断
+return optionItem.value === TARGET_SCENE_CODE
+
+// ✅ 正确 - 只说明当前业务事实
+// 目标场景：接口 code = TARGET_SCENE_CODE
+return optionItem.value === TARGET_SCENE_CODE
 ```
 
 **注释位置与内容分层规范**：
