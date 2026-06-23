@@ -74,6 +74,9 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ `com-map-tag` 已内置空值展示、命中映射展示、未命中展示原始值等逻辑，禁止在业务页面重复手写同类兜底。
      - ✅ `com-map-tag` 只负责展示，不作为表单控件；需要 `v-model`、校验、提交的字段，应使用 `com-form-select`、`com-form-radio` 等表单组件。禁用态只读表单字段，优先使用禁用态表单组件复用同一份 Options。
      - ✅ 如果标签展示还包含额外业务交互，例如点击跳转、带确认操作、复杂插槽内容，才允许不用 `com-map-tag`，但必须说明原因并仍按模板列插槽结构实现。
+     - ✅ `com-map-tag` 的统一展示属性必须优先写在组件 props 上，例如同一列所有标签都不需要圆角时，写 `<com-map-tag :value="value" :map="xxxStatusOptions" :round="false" />`。
+     - ✅ 只有某个枚举项需要不同于其他枚举项的展示属性时，才把 `round`、`size`、`effect`、`class`、`style` 等写进 Options / TagMap 的对应项。
+     - ❌ 禁止所有枚举项都重复写相同展示配置，例如每个 option 都写 `round: false`、相同 `size` 或相同 `effect`；这类统一样式应外提到组件 props。
 
      ```vue
      <!-- ❌ 禁止：普通枚举标签展示手写 el-tag 和兜底链 -->
@@ -86,6 +89,30 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      <!-- ✅ 正确：标签映射交给项目约定的 com-map-tag -->
      <template #col_xxxStatus="{ value }">
          <com-map-tag :value="value" :map="xxxStatusOptions" />
+     </template>
+
+     <!-- ❌ 禁止：所有项都重复写相同展示属性 -->
+     <script setup lang="ts">
+     const xxxStatusOptions: CommonEnum<{ type: 'success' | 'warning'; round: boolean }> = [
+         { label: '状态A', value: 1, type: 'success', round: false },
+         { label: '状态B', value: 2, type: 'warning', round: false }
+     ]
+     </script>
+
+     <template #col_xxxStatus="{ value }">
+         <com-map-tag :value="value" :map="xxxStatusOptions" />
+     </template>
+
+     <!-- ✅ 正确：统一展示属性写在组件 props 上 -->
+     <script setup lang="ts">
+     const xxxStatusOptions: CommonEnum<{ type: 'success' | 'warning' }> = [
+         { label: '状态A', value: 1, type: 'success' },
+         { label: '状态B', value: 2, type: 'warning' }
+     ]
+     </script>
+
+     <template #col_xxxStatus="{ value }">
+         <com-map-tag :value="value" :map="xxxStatusOptions" :round="false" />
      </template>
 
      <!-- ✅ 正确：下拉 option 中的状态标签也复用 com-map-tag -->
