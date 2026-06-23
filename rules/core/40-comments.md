@@ -95,6 +95,7 @@ return optionItem.value === TARGET_SCENE_CODE
 - **禁止规则漂移**：不要在函数顶部写一大段具体业务规则，而实际判断只留一行代码；规则变化时这类注释最容易过期。
 - **注释紧贴代码**：如果注释解释的是某个 `if`、`return`、`v-if`、兜底值或特殊状态，注释必须放在该代码附近。
 - **函数注释不替代过程注释**：函数名或 JSDoc 只说明函数用途；当函数内部存在关键条件分支、接口选择、跨系统调用、数据组装、兜底返回等逻辑时，必须在对应代码附近添加过程注释，说明该分支为什么这样处理。
+- **字段级处理细节必须贴近字段**：函数 / 变量顶部注释只描述整体业务身份、整体输入输出或稳定职责；字段转换、接口格式、兼容逻辑、兜底策略、特殊枚举处理等细节，必须写在对应赋值、判断、`map`、`return` 分支附近。禁止把多个字段级细节堆到函数顶部，导致后续拓展时无法判断每条说明对应哪一段逻辑。
 - **过程注释必须贴近判断**：不要只在函数顶部写“获取业务员下拉”之类的总说明，而让内部 `if`、`return []`、接口选择逻辑没有任何解释。
 - **if 分支说明写在 if 上方**：当注释解释的是某个 `if` 分支代表的业务场景、接口来源、枚举含义或进入该分支的原因时，注释应紧贴写在 `if` 语句上一行，而不是写在 `{}` 内第一行。
 - **分支注释应写明对应值**：当分支条件依赖枚举、状态码、类型字段时，注释中应同时写明业务含义和具体值，例如 `// 邀约对象 = 供应商（targetType = 1），业务员来自 SRM 批量接口`，避免只写“供应商业务员来自 SRM”。
@@ -127,6 +128,30 @@ function getBatchStaffGroupList(batchStaffOptions) {
 }
 ```
 **代码示例**：
+
+```javascript
+// ❌ 不推荐 - 字段级细节堆在函数顶部，后续新增字段处理时容易混乱
+/** 获取查询参数：业务字段A转逗号分隔，业务字段B兼容旧字段 */
+function getXxxParams() {
+    return {
+        ...formData.value,
+        fieldA: formData.value.fieldA?.map(fieldItem => fieldItem.join(',')),
+        fieldB: formData.value.fieldB ?? formData.value.oldFieldB
+    }
+}
+
+// ✅ 推荐 - 顶部说明整体职责，细节贴近具体字段处理
+/** 获取查询参数 */
+function getXxxParams() {
+    return {
+        ...formData.value,
+        // 业务字段A按接口要求提交为逗号分隔
+        fieldA: formData.value.fieldA?.map(fieldItem => fieldItem.join(',')),
+        // 兼容旧数据来源，后端新老字段语义一致
+        fieldB: formData.value.fieldB ?? formData.value.oldFieldB
+    }
+}
+```
 
 ```javascript
 // ❌ 不推荐 - 具体规则堆在顶部，和实际判断分离
