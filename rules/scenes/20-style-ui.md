@@ -56,6 +56,9 @@
 3. 同元素状态修饰符必须嵌套在基础类内部，例如 `.xxx__item` 内写 `&.xxx__item--active`；禁止把 `.xxx__item--active` 单独平铺成顶层选择器。
 4. `:deep()` 覆盖必须放在对应业务父级下，并优先先命中子组件根节点，再嵌套其内部节点；禁止在文件顶层散落多个无归属的 `:deep(.xxx .yyy)`。
 5. 交付前必须至少做一次结构自检：回读最终 `<style>` 或查看本次 diff，若同一业务前缀的根类和子元素类同时出现在顶层，必须先修正再交付。
+6. **同前缀选择器必须归属到同一业务根**：如果模板存在业务根类 `.xxx-panel`，则同一业务前缀下的 `.xxx-panel__header`、`.xxx-panel__body`、`.xxx-panel-item` 等选择器默认都必须嵌套在 `.xxx-panel` 内部，并继续按真实 HTML 父子关系分层；禁止因为写了完整类名，就把同前缀选择器拆成多个顶层块。只有该选择器本身对应独立根节点、全局覆盖入口或跨组件公共根时，才允许顶层平铺，并必须在注释中说明独立原因。
+7. **先按模板结构搭样式骨架，再填 CSS 属性**：新增或大幅调整 SCSS 时，必须先根据模板父子关系建立选择器骨架，再补充定位、尺寸、颜色等属性；禁止按视觉区域或 Figma 图层顺序随手追加一批顶层选择器，导致样式看似分块、实际没有层级归属。
+8. **交付前必须做同前缀顶层扫描**：回读最终样式时，如果发现同一业务前缀的根类和多个子元素类同时位于文件顶层，例如 `.xxx-panel`、`.xxx-panel__header`、`.xxx-panel__body` 并列，必须先判断是否真实独立根；不是独立根就必须收回到对应父级下再交付。
 
 **错误示例**：
 
@@ -108,6 +111,47 @@
             .xxx-select__inner {
                 min-width: 0;
             }
+        }
+    }
+}
+```
+
+**同前缀归属示例**：
+
+```scss
+/* ❌ 禁止：同一业务块的子元素按视觉区域平铺在顶层 */
+.xxx-panel {
+    position: relative;
+}
+
+.xxx-panel__header {
+    display: flex;
+}
+
+.xxx-panel__body {
+    padding: 16px;
+}
+
+.xxx-panel-item {
+    display: flex;
+}
+
+/* ✅ 正确：同一业务块归属到业务根，并按真实父子结构嵌套 */
+.xxx-panel {
+    position: relative;
+
+    /* 面板头部 */
+    .xxx-panel__header {
+        display: flex;
+    }
+
+    /* 面板内容区 */
+    .xxx-panel__body {
+        padding: 16px;
+
+        /* 面板内容条目 */
+        .xxx-panel-item {
+            display: flex;
         }
     }
 }
