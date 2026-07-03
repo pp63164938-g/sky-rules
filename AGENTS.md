@@ -29,8 +29,9 @@
 | `rules/README.md` | 全局规则维护索引，说明规则归属、章节策略、写法模板 |
 | `rules/rules-manifest.json` | 全局规则拼接清单，决定各规则源文件的同步顺序 |
 | `rules/global-rules.md` | 全局规则常驻入口，只承载核心理念、P0 红线、场景索引等高优先级内容 |
-| `rules/core/` | 跨场景基础硬规则，例如工作流、禁止发散、格式化、注释 |
-| `rules/scenes/` | 场景化细则，例如接口联调、组件类型、样式、i18n、终端验证 |
+| `rules/common/` | 前后端通用规则，例如工作流、禁止发散、格式化、注释、接口联调、终端验证 |
+| `rules/frontend/` | 前端专属规则，例如组件类型、样式、路由、i18n、Icon、Vue 文件头 |
+| `rules/backend/` | 后端专属规则，例如服务分层、接口契约、数据持久化、鉴权安全、任务缓存 |
 | `rules/projects/` | 项目专属规则，只放特定项目需要遵守的补充规则 |
 | `workflows/README.md` | 工作流维护索引，说明命名、归属、扩展标准 |
 | `workflows/*.md` | 各场景工作流源文件，会同步为 Windsurf / Antigravity 工作流和 Codex Skills |
@@ -39,7 +40,7 @@
 
 ## 新增规则流程
 
-1. 判断归属：通用规则进 `rules/core/` 或 `rules/scenes/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；项目专属规则留在对应项目。
+1. 判断归属：前后端都适用的规则进 `rules/common/`；前端专属规则进 `rules/frontend/`；后端专属规则进 `rules/backend/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找目标文件，按主题插入，禁止追加到无关文件末尾。
 4. 预览确认：向用户展示拟新增内容、目标文件和目标章节，等待确认。

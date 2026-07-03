@@ -35,6 +35,8 @@ REQUIRED_ASSEMBLED_MARKERS = [
     "# CSS/SCSS 样式规范",
     "# 联调开发规范",
     "## 跨接口字段归属规范",
+    "# 后端接口契约与服务分层规范",
+    "# 后端数据持久化与事务规范",
     "**AI 规则 / Skills 同步验证规范**",
 ]
 
@@ -202,7 +204,7 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
     manifest_paths = get_manifest_paths(entries)
     expected_paths: set[str] = {"global-rules.md"}
 
-    for directory_name in ["core", "scenes", "projects"]:
+    for directory_name in ["common", "frontend", "backend", "projects"]:
         directory = RULES_DIR / directory_name
         if not directory.exists():
             STATE.warn(f"规则目录不存在: rules/{directory_name}")
@@ -221,7 +223,7 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
         STATE.fail(f"manifest 引用了非标准规则源文件: {', '.join(extra_paths)}")
 
     if not missing_paths and not extra_paths:
-        STATE.ok("rules/core、rules/scenes、rules/projects 下的规则文件均已进入 manifest")
+        STATE.ok("rules/common、rules/frontend、rules/backend、rules/projects 下的规则文件均已进入 manifest")
 
 
 def check_index_files(entries: list[dict[str, str]]) -> None:
@@ -243,6 +245,9 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
 
     required_root_readme_markers = [
         "rules/rules-manifest.json",
+        "rules/common/",
+        "rules/frontend/",
+        "rules/backend/",
         "assembled_rules",
         "codex_rules",
         "scripts/check-rules.py",
@@ -263,6 +268,9 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     required_agents_markers = [
         "rules/README.md",
         "rules/rules-manifest.json",
+        "rules/common/",
+        "rules/frontend/",
+        "rules/backend/",
         "scripts/check-rules.py",
         "闭环验收回执",
         "内置自检",
@@ -281,6 +289,9 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     required_update_rules_markers = [
         "全局规则拆分文件定位规范",
         "rules/rules-manifest.json",
+        "rules/common/",
+        "rules/frontend/",
+        "rules/backend/",
         "scripts/check-rules.py",
         "闭环验收结果",
         "内置自检",
@@ -346,7 +357,7 @@ def check_assembled_rules(entries: list[dict[str, str]]) -> None:
     if missing_markers:
         STATE.fail(f"拼接后的全局规则缺少关键内容: {', '.join(missing_markers)}")
     else:
-        STATE.ok("拼接后的全局规则包含 P0、样式、联调、跨接口和同步验证关键规则")
+        STATE.ok("拼接后的全局规则包含 P0、前端样式、联调、跨接口、后端和同步验证关键规则")
 
     codex_rules = assemble_rules(entries, strip_frontmatter=True).lstrip()
     if codex_rules.startswith("---"):

@@ -11,8 +11,9 @@ sky-rules/
 │   ├── README.md          # 全局规则维护索引
 │   ├── rules-manifest.json # 全局规则拼接清单
 │   ├── global-rules.md    # 常驻入口：P0 红线、场景索引、读取策略
-│   ├── core/              # 跨场景基础硬规则
-│   ├── scenes/            # 场景化规则细则
+│   ├── common/            # 前后端通用规则
+│   ├── frontend/          # 前端专属规则
+│   ├── backend/           # 后端专属规则
 │   └── projects/          # 项目专属规则
 ├── workflows/              # 工作流文件（所有编辑器共享）
 │   ├── README.md          # 工作流维护索引
@@ -38,11 +39,11 @@ sky-rules/
 | `workflows/README.md` | 人 / AI | 工作流维护索引，说明工作流命名、归属、结构和扩展标准 |
 | `scripts/check-rules.py` | 人 / AI | 规则仓库自检入口，检查 manifest、README 索引、拼接结果和同步产物 |
 
-新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。全局规则细则按主题拆在 `rules/core/`、`rules/scenes/`、`rules/projects/` 中，并由 `rules/rules-manifest.json` 统一拼接；入口文件只做索引和流程说明。
+新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。全局规则细则按适用对象拆在 `rules/common/`、`rules/frontend/`、`rules/backend/`、`rules/projects/` 中，并由 `rules/rules-manifest.json` 统一拼接；入口文件只做索引和流程说明。
 
 ### 全局规则拼接说明
 
-`rules/rules-manifest.json` 是**所有编辑器共用的全局规则拼接清单**。同步脚本会按清单顺序读取 `rules/global-rules.md`、`rules/core/*.md`、`rules/scenes/*.md`、`rules/projects/*.md`，生成各编辑器实际读取的完整全局规则。
+`rules/rules-manifest.json` 是**所有编辑器共用的全局规则拼接清单**。同步脚本会按清单顺序读取 `rules/global-rules.md`、`rules/common/*.md`、`rules/frontend/*.md`、`rules/backend/*.md`、`rules/projects/*.md`，生成各编辑器实际读取的完整全局规则。
 
 `rules/global-rules.md` 只保留常驻入口内容，例如 P0 红线、场景索引和读取策略。具体规则细节放到对应拆分文件中，便于 AI 和人按主题查找。
 
@@ -60,7 +61,7 @@ sky-rules/
 
 新增规则或工作流时遵循以下顺序：
 
-1. 判断归属：通用硬规则放 `rules/core/` 或 `rules/scenes/`；P0 红线和场景索引才放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
+1. 判断归属：前后端都适用的规则放 `rules/common/`；前端专属规则放 `rules/frontend/`；后端专属规则放 `rules/backend/`；P0 红线和场景索引才放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标文件，禁止追加到无关文件末尾；新增规则文件或新工作流时更新对应 README 索引。
 4. 预览确认：AI 写入前必须先展示拟新增内容和插入位置，用户确认后再修改源文件。
@@ -99,9 +100,9 @@ sky-rules/
 自检范围：
 
 - `rules/rules-manifest.json` 是否结构正确、路径不重复、规则源文件存在
-- `rules/core/`、`rules/scenes/`、`rules/projects/` 下的规则文件是否都进入 manifest
+- `rules/common/`、`rules/frontend/`、`rules/backend/`、`rules/projects/` 下的规则文件是否都进入 manifest
 - `README.md`、`AGENTS.md`、`rules/README.md`、`workflows/base.update-rules.md` 是否能指向 manifest 和自检入口
-- 按 manifest 拼接后的全局规则是否仍包含关键红线、联调、样式、跨接口字段和同步验证规则
+- 按 manifest 拼接后的全局规则是否仍包含关键红线、联调、前端样式、跨接口字段、后端规则和同步验证规则
 - `sync-workflows.py` 是否仍支持 `assembled_rules`、`codex_rules` 和 `workflows/README.md` 排除
 - 已生成的 Codex `base-update-rules` Skill 是否能看到规则拆分定位和自检入口
 
