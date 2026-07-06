@@ -337,6 +337,9 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 只有同一个详情组件实例内确实会切换 query 时，才使用 `useRoute + watch` 明确监听并重新拉详情；不要为了“响应式”默认包一层 `computed(() => decodeRouteQuery())`。
      - ✅ 列表页跳详情只传详情查询必需参数；详情页标题、展示内容、模块标题应在详情页内部根据详情数据生成，不通过 query 透传。
      - ✅ 如需跨页携带复杂临时数据，优先参考项目已有 `emitBringData` / `receiveBringData` 用法，不要把大对象直接塞入 route query。
+     - ✅ 使用 `emitBringData` / `receiveBringData` 时，必须先查看 `src/utils/utils-common.tsx` 的实现和项目既有用法，确认它是 localStorage 一次性带入机制：发送方先写入再跳转，接收方读取后会清理缓存。
+     - ✅ 接收页若可能被 keep-alive 缓存，或同一路由页面可能已经打开后再次从列表页跳入，不能只在 `setup` / 首次挂载时调用 `receiveBringData`；必须同时在首次进入和 `onActivated` 中处理带入数据。
+     - ✅ 接收带入数据时必须用 `bringType` 判断来源，并按当前页面模式限制处理范围，例如只在新增 / 创建模式消费，避免编辑、详情、重提等页面误吃跨页缓存。
    - 🔴 **雷区 12：遗漏 API 的全局异常提示配置**
      - ❌ 在定义 API 时，不加 `message` 参数，导致接口报错时没有全局的错误拦截提示；或者在每个接口里硬编码写死 `message: true`，导致后期无法统一调整。
      - ✅ **正解：** 在定义所有可能需要报错强提醒的 API（包括查询、操作等）时，**必须**参考 CRM 模块的规范，在 API 文件的头部统一声明 `const message = true // 默认开启异常提醒`，然后在 `request` 配置中传入简写的 `message`。由统一拦截器自动接管并抛出业务异常提示。至于成功提示（`ElMessage.success`），仍然由业务方在 `try` 块内按需手动抛出。
