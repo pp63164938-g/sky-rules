@@ -57,6 +57,19 @@ const businessTypeLabel = businessTypeOptions.find(businessTypeOption => busines
 - 只读场景如果必须使用输入框展示，也不能直接展示原始硬编码文本，应由枚举 Options 派生展示值。
 - 禁止为每个枚举项机械拆分值常量。只有枚举值会被多处业务判断、接口分支、禁用规则或跨文件复用时，才单独抽值常量；仅用于 options 展示/提交时，直接在 options 中维护 `label/value`。
 - 新增默认值优先从 options 中取值，例如 `xxxOptions[0].value`；如果默认项不是第一项或有明确业务名称，再单独声明“默认值”常量，不要把所有枚举项都拆成常量。
+- 当接口枚举值在静态开发或联调前存在 string / number 类型不确定时，比较前必须用显式类型归一表达，例如 `String(xxxValue) === TODO待联调_值_业务类型` 或 `Number(xxxValue) === XXX_CODE`；禁止用模板字符串 `` `${xxxValue}` === XXX_CODE `` 做隐式转字符串。模板字符串只用于文案拼接，不能用来伪装类型处理。
+- 类型已由接口文档、抓包或后端确认后，优先让字段类型和常量类型保持一致，直接同类型比较；不再保留无必要的 `String()` / `Number()` 包装。
+
+```javascript
+// ❌ 禁止 - 用模板字符串隐藏类型归一意图
+const matched = `${row.type}` === TODO待联调_值_业务类型
+
+// ✅ 正确 - 类型暂未确认时，显式说明当前比较按字符串归一
+const matched = String(row.type) === TODO待联调_值_业务类型
+
+// ✅ 正确 - 类型确认后，字段和常量保持同类型再比较
+const matched = row.type === BUSINESS_TYPE_A
+```
 
 **禁止使用展示文字做业务判断**：
 
