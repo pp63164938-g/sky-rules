@@ -68,6 +68,16 @@ description: 根据项目文档规范执行（优先读取 docs 目录；接口�
      ```
    - 文档内图片、附件、HTML/CSS 等相对资源需要继续读取时，按当前文档路径解析相对路径，并优先请求：
      - `GET https://gitlabpv.tyhdev.com/api/gitlab/raw?project_id={projectId}&path={resolvedPath}`
+   - 当浏览器可以打开 `gitlabpv.tyhdev.com`，但终端直连首页、`/api/gitlab/file` 或 `/api/gitlab/raw` 超时时，不能直接判定文档不可访问，必须先排查本机代理链路：
+     - 先检查域名解析、直连 `curl`、`HTTP_PROXY` / `HTTPS_PROXY` 环境变量和本机代理监听端口。
+     - 如果本机 Clash / Mihomo 等代理可用，应在终端请求中显式使用 `-x http://127.0.0.1:{port}` 或临时代理环境变量继续读取。
+     - 代理可通后，同一批 GitLab 预览工具请求应统一使用已验证代理方式；禁止直连和代理混用导致结论不一致。
+     - 下载图片、HTML、附件等资源时避免无控制并发；按单文件或小并发读取，失败后有限重试，并记录具体路径和失败原因。
+     - 如果直连与代理都失败，或代理端口无法确认，再说明网络受限并向用户索取可访问正文、资源包或浏览器 XHR 信息。
+   - 当关联文档或相对资源在当前 `projectId` 下返回 404 时，不能直接判定文档不存在，必须先确认真实项目和路径：
+     - 优先请求 `GET https://gitlabpv.tyhdev.com/api/gitlab/repos` 查看预览工具当前可访问项目清单。
+     - 再请求 `GET https://gitlabpv.tyhdev.com/api/gitlab/tree?project_id={candidateProjectId}&path={candidatePath}` 按目录逐层定位目标文件。
+     - 只有在候选项目和目录树均确认不存在目标路径后，才向用户说明文档缺失或要求补充正确链接。
    - 读取成功后，如果后续需要多次解析正文、链接、图片或附件，必须优先把本次 JSON 响应或正文缓存到临时文件 / 变量后本地解析，禁止重复请求同一个远端文件来截取不同段落。
    - 相对资源读取应按正文所在目录一次性解析出资源清单，再按关键程度读取；读取失败时记录具体资源路径、HTTP 状态 / 超时原因和影响范围。
    - 只有以下场景才使用浏览器辅助：
