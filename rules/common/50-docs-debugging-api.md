@@ -278,3 +278,33 @@ const params = { amout: Number(formData.amout), reson: formData.reson };
 2. 结束标记保持简洁，如 `// @mock-end`
 3. 标记成对使用，包裹需要移除的完整代码块
 4. 联调/上线前，全局搜索对应标记进行清理
+5. **静态缺接口优先走正式组件流程**：静态开发阶段缺少接口时，组件应尽量按最终正式流程编写，正常调用 API 函数并处理成功 / 失败回调；禁止在组件中用“接口待联调”告警直接中断流程，导致后续联调还要重写组件主流程。
+6. **Mock 只能放在 API 层**：缺接口时只能在 API 文件中用 `// @mock-start 联调时删除` / `// @mock-end` 包住模拟成功返回，并在 mock 标记中保留 `TODO待联调_用途描述`；禁止在组件内联 mock 成功、改本地状态伪造真实后端结果或串联相似接口。
+7. **静态预留遵循最小包裹原则**：需求已确认、后续正式联调仍会保留的业务入口、函数声明、模板入口、API 函数名和业务 JSDoc 不应整体包进临时标记；只包裹 API mock 返回、临时空数据或临时缺口实现等需要联调替换的最小代码块。
+8. **生命周期标记必须写清替换范围**：`@mock-start` / `@todo-start` 描述必须明确是“联调时替换本块”还是“联调时删除整个入口”。默认只能替换本块；只有入口本身不是需求确认内容、或用户明确要求临时入口时，才允许删除整个入口。
+9. **静态成功必须交付告知**：只要当前成功路径来自 API mock，最终回复必须说明 mock 位置、不会产生真实业务副作用、联调时需要替换的真实接口和字段；禁止让用户误以为已经完成真实链路。
+10. **联调清理顺序必须明确**：进入联调时先全局搜索 `@mock-start`、`@todo-start`、`TODO待联调_`、`TODO无此联调字段_`，逐项确认替换、删除或升级为 `TODO无此联调字段_用途描述`；禁止把静态 mock 或静态预留标记原样保留到联调交付结果中。
+
+```javascript
+// ❌ 禁止 - 组件中断正式流程，联调时还要重写主流程
+/** xxx 操作入口 */
+async function handleXxx() {
+    message.warning('接口待联调')
+}
+
+// ✅ 正确 - 组件按正式流程调用 API，临时成功只在 API 层 mock
+/** xxx 操作入口 */
+async function handleXxx() {
+    await submitXxx(params)
+    message.success('操作成功')
+    refreshList()
+}
+
+/** xxx 操作 */
+function submitXxx(params = {}) {
+    // @mock-start 联调时删除：TODO待联调_xxx操作接口方法路径参数
+    return Promise.resolve({ code: 0, data: true, msg: '模拟成功' })
+    // @mock-end
+    // 联调时替换为接口文档、抓包或后端确认的真实 request 调用
+}
+```
