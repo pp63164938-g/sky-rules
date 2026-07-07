@@ -34,9 +34,17 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 🔴 **雷区 2：剥离 `fn` 原生生态**
      - ❌ 把 `useTable` 原本自带并吐出的 `fn` 给丢弃，自己在 `<sky-table-pagination :fn="getTableData">` 里单独接管分页获取逻辑。
      - ✅ **正解：** `<sky-table-pagination :fn="fn">`，并直接在 `useTable` 第二个参数 `{ fnApi: 你的API方法 }` 进行赋值。若只是占位接口且页面暂不需要可视化数据，可临时用 `{ fnApi: () => Promise.resolve({ data: { records: [], total: 0 }}) as any }` 占位；若进入静态开发并需要页面可预览，则必须按“雷区 8”在 API 层提供精简 Mock 数据。
+   - 🔴 **雷区 2 补充：弹窗内列表也必须沿用 list-a 数据生态**
+     - ❌ 在弹窗、抽屉、Tab 子区里只要出现 `sky-search-form-a + sky-table-pagination + 接口列表`，禁止自行写 `tableRef + getTableData + handleParams + settingSearchForm` 接管分页和搜索。
+     - ✅ **正解：** 容器可以按弹窗模板使用 `sky-dialog`，但搜索、表格和接口列表逻辑必须沿用 `list-a.vue` 的内部生态：`useTable(...)` 返回 `columns / fn / tableLoad / tableRef`，表格绑定 `:fn="fn"`，搜索触发 `tableLoad(searchForm)`。
+     - ✅ 静态开发需要可视化数据时，Mock 仍放在 API 层；组件不改造 `useTable` / `fn` 链路。
    - 🔴 **雷区 3：复杂化搜索表单事件**
      - ❌ 自己实现 `@search="onSearch"` 并且还在方法里搞一堆 `removeEmpty(handleActiveFormParams(...))` 然后才更新刷新列表，并创建 `settingSearchFrom` 保存参数。
      - ✅ **正解：** 表单的触发就直接 `<sky-search-form-a @search="tableLoad(searchForm)" ...>` 结束战斗！如果有旁支获取聚合数据的操作，才自定义一个方法，并在内部纯粹地调用 `tableLoad(searchForm.value)` 和其余获取方法即可。
+   - 🔴 **雷区 3 补充：搜索 A 禁止退回裸表单项**
+     - ❌ 使用 `sky-search-form-a` 时，禁止手写 `sky-search-form-item-a + el-input / el-select`，再自己维护搜索参数转换。
+     - ✅ **正解：** 按 `list-a.vue` 使用 `com-form-input`、`com-form-select`、`business-*` 等表单组件；搜索项的 `prop` 与 `v-model` 字段保持一致。
+     - ✅ 除非当前组件确实没有对应 `com-form-*` 能力，才允许局部使用原生组件，并必须说明原因。
    - 🔴 **雷区 4：表单与表格字段及下拉选缺少阶段区分**
      - ❌ 静态开发 / 未联调阶段缺字段依据时，把临时字段伪装成正式接口字段，导致后续联调无法搜索定位。
      - ❌ 联调确认后，已经确认的字段、枚举、Options 仍继续使用 `form_`、`table_`、`mock`、`temp`、`待联调` 等临时开发命名，导致正式代码看起来像联调占位。
@@ -212,7 +220,6 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
                createDefaultComponent(component.default, {
                    type: 'edit',
                    id: row.id,
-                   row,
                    onSubmit: () => tableLoad()
                })
            })
@@ -223,9 +230,11 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 弹窗组件内部负责表单回显、校验、提交接口、成功提示和关闭逻辑；列表页只负责打开弹窗和提交成功后的 `tableLoad()` 或按需求无刷更新当前行。
    - 🔴 **雷区 10 补充：编辑弹窗直接依赖列表 row**
      - ❌ 标准编辑弹窗禁止直接接收列表行 `row` 并用 `props.row` 初始化表单，这会让弹窗依赖列表字段结构，也容易遗漏详情接口字段。
-     - ✅ **正解：** 编辑入口按 `dev-template/dialog-update.vue` 传入 `id`，弹窗 props 使用 `id?: number | string`，并在弹窗内部通过 `updateDetail()` 获取详情或按模板回填。
+     - ❌ `dev-template/dialog-update.vue` 中关于 `row` 的注释不是默认许可，不能因为模板注释提到 `row` 就绕过详情接口。
+     - ✅ **正解：** 编辑入口按 `dev-template/dialog-update.vue` 传入 `id`，弹窗 props 使用 `id?: number | string`，并在弹窗内部通过 `updateDetail()` 调详情接口或 API 层静态 detail mock 回显。
      - ✅ 列表行只负责提供唯一标识，不作为编辑表单的数据源。
-     - ✅ 只有用户明确说明无需详情接口、列表数据就是完整编辑数据，或业务组件本身就是行内编辑器时，才允许传 `row`；使用前必须说明原因。
+     - ✅ 后端暂未提供详情接口但编辑弹窗需要回显时，应在 API 层预留详情函数和 mock，保持弹窗主流程与正式联调一致。
+     - ✅ 只有用户明确说明无需详情接口、列表数据就是完整编辑数据，或业务组件本身就是行内编辑器时，才允许传 `row`；使用前必须在最终回复里说明原因。
    - 🔴 **雷区 10 补充：弹窗表单布局整行滥用**
      - ❌ 为贴截图或图省事，给新增/编辑弹窗里的所有表单项都加 `class="col-span-full"`，导致标准弹窗从双列网格退化成单列表单。
      - ✅ **正解：** 标准新增/编辑弹窗必须以 `src/components/dev-template/dialog-update.vue` 的 `common-grid-form` 双列网格为默认布局；普通输入框、选择框、开关、只读字段默认占一列。
