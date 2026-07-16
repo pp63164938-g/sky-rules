@@ -331,8 +331,89 @@ dialog-update/
 - 如果运行时本来允许字段为空，应修改源头类型，例如 `name: string` 改为 `name?: string`
 - 如果组件支持扩展字段，应通过泛型、扩展类型、`Omix` 或稳定扩展点表达，而不是写页面专属断言
 - 如果函数返回值被推断得过窄或过宽，应显式声明返回类型，而不是新增中间函数
+- 如果组件、Hook、下拉或页面方法消费接口响应数据，应优先从 API 层导入响应类型，或定义当前页面 ViewModel 类型；禁止在消费处用 `Omix`、`as Xxx` 或临时包装函数掩盖 API 响应类型缺失。
+- 如果发现接口响应类型缺少当前代码读取的字段，应先回到对应 API 响应类型确认字段来源；字段属于当前接口则补类型，字段不属于当前接口则按跨接口字段归属规范处理，不能在组件侧强行扩展成正式字段。
 - 如果类型暴露出业务状态建模不清晰，应先调整状态模型，例如用 `undefined` 表示“无状态”，不要新增 `default` 枚举再到处排除
 - 如果确实需要类型断言，必须能说明外部系统、组件契约或前置校验已经保证该类型成立
+
+## 前端业务类型位置规范
+
+**核心原则**：非 API 契约的前端业务类型，按“最近业务所有者”放置；默认放当前页面 / 组件 / 弹窗 / Hook 所属目录的 `types.ts`，禁止混入 API DTO，也禁止无依据提升到全局类型。
+
+**适用场景**：
+
+- 页面表单类型、ViewModel、展示行类型。
+- 前端 `_xxx` 扩展字段、派生字段、中间状态字段。
+- 弹窗表单、弹窗内部步骤、弹窗专属子组件类型。
+- Hook 状态、Hook 返回模型、Hook 参数模型。
+- 页面间 `bringData`、路由解密后的页面参数模型。
+- 组件内部仅服务展示、交互、校验、缓存的业务类型。
+
+**执行要求**：
+
+1. **组件 / 函数私有的一次性类型**：只在当前文件内部使用、字段少、不会被外部引用时，类型可以贴近使用处，默认不导出。
+2. **页面内多处复用的业务类型**：放当前页面目录 `types.ts`，例如页面主组件、页面专属子组件、页面 Hook 共同消费的表单类型、ViewModel、展示行类型。
+3. **弹窗目录化后的业务类型**：复杂弹窗已经目录化时，弹窗专属类型放弹窗目录 `types.ts`，例如 `dialogs/dialog-xxx/types.ts`。
+4. **Hook 专属类型**：只服务单个 Hook 的类型优先贴近 Hook；多个 Hook 或页面共同消费时，提升到当前页面 / 当前功能目录 `types.ts`。
+5. **跨页面同业务模块复用类型**：放当前业务模块或功能目录的 `types.ts`；禁止直接提升到 `src/types/`。
+6. **跨模块稳定公共类型**：只有两个及以上模块稳定复用，且语义不依赖某个页面或接口时，才放 `src/types/` 或项目既有公共类型目录。
+7. **API DTO 与前端业务类型分层**：API 请求 / 响应 DTO 从 API 层导入；前端展示、编辑态、选择态、派生字段通过交叉类型或新 ViewModel 扩展，不要反向写进 API DTO。
+8. **前端扩展字段使用 `_xxx`**：不对应后端的前端状态、派生值、中间值必须用 `_xxx` 命名，并在类型处说明不对应后端字段。
+9. **默认使用 `type`**：新增手写业务类型默认使用 `type`；进入已有 `interface` 风格文件时沿用 `interface`。
+
+**代码示例**：
+
+```ts
+// API DTO 来自 API 层
+import type { XxxRecord } from '@/api/xxx/types'
+
+// ✅ 正确 - 页面展示行扩展前端字段，放页面 types.ts
+export type XxxViewRow = XxxRecord & {
+    /** 前端字段：行编辑态，不对应后端字段 */
+    _editing?: boolean
+}
+
+// ✅ 正确 - 页面表单类型放页面 types.ts
+export type XxxFormModel = {
+    /** 业务名称 */
+    name?: string
+    /** 业务状态 */
+    status?: number
+}
+```
+
+**判断标准**：
+
+- 这个类型是否描述接口真实请求 / 响应；是则属于 API 层。
+- 这个类型是否只服务页面展示、表单、弹窗、Hook 或前端状态；是则属于最近业务目录。
+- 是否只有当前文件使用；是则可以贴近使用处，不必机械抽 `types.ts`。
+- 是否被跨页面 / 跨模块稳定复用；不是则不要提升到公共类型目录。
+
+## type 与 interface 选择规范
+
+**核心原则**：新增手写类型默认优先使用 `type`；进入已有 `interface` 风格文件时沿用 `interface`，需要声明合并或开放扩展时再使用 `interface`。
+
+**执行要求**：
+
+- API DTO、表单模型、页面 ViewModel、Hook 返回模型等新增手写类型默认使用 `type`。
+- 联合类型、交叉类型、工具类型、派生类型必须优先使用 `type`。
+- 已有文件整体使用 `interface` 时，新增同类接口契约继续使用 `interface`，避免同文件风格混乱。
+- 需要声明合并、开放扩展、全局对象扩展或类式实现契约时使用 `interface`。
+- 禁止为了统一风格批量把旧 `interface` 改成 `type`，也禁止反向批量改旧 `type`。
+
+```ts
+// ✅ 推荐 - 新增手写 DTO 默认使用 type
+export type XxxDetail = {
+    /** 业务编号 */
+    businessNo: string
+}
+
+// ✅ 允许 - 已有 resolver 文件统一使用 interface 时，继续沿用 interface
+export interface XxxDetailResolver {
+    /** 业务编号 */
+    businessNo: string
+}
+```
 
 **代码示例**：
 
@@ -352,6 +433,20 @@ export type UserInfo = {
 }
 
 const text = getUserString(emailItem)
+```
+
+```typescript
+// ❌ 禁止 - 接口响应结构已确认，组件侧仍用 Omix 接收并读取字段
+function handleOptionChange(optionItem: Omix) {
+    setForm({ businessNo: optionItem.businessNo })
+}
+
+// ✅ 正确 - 组件消费 API 响应类型，字段来源可追溯到接口
+import type { XxxOption } from '@/api/xxx'
+
+function handleOptionChange(optionItem: XxxOption) {
+    setForm({ businessNo: optionItem.businessNo })
+}
 ```
 
 ```typescript
