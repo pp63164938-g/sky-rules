@@ -22,6 +22,7 @@ README_FILE = ROOT / "README.md"
 AGENTS_FILE = ROOT / "AGENTS.md"
 RULES_README_FILE = RULES_DIR / "README.md"
 UPDATE_RULES_WORKFLOW = WORKFLOWS_DIR / "base.update-rules.md"
+REQUIREMENT_DEV_CLOSED_LOOP_WORKFLOW = WORKFLOWS_DIR / "base.requirement-dev-closed-loop.md"
 SYNC_SCRIPT = ROOT / "sync-workflows.py"
 SYNC_TARGETS_EXAMPLE = ROOT / "sync-targets.example.json"
 
@@ -232,6 +233,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     root_readme = read_text(README_FILE)
     agents = read_text(AGENTS_FILE)
     update_rules_workflow = read_text(UPDATE_RULES_WORKFLOW)
+    requirement_dev_closed_loop_workflow = read_text(REQUIREMENT_DEV_CLOSED_LOOP_WORKFLOW)
 
     missing_from_rules_readme = [
         entry["path"]
@@ -306,6 +308,28 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         STATE.fail(f"base.update-rules.md 缺少规则维护闭环: {', '.join(missing_update_rules_markers)}")
     else:
         STATE.ok("base.update-rules.md 已串联拆分定位、manifest 和自检入口")
+
+    required_requirement_closed_loop_markers = [
+        "AI 能力发散审计",
+        "业务对象、生命周期、角色、范围和跨系统关系",
+        "定位、聚合、关联、诊断、建议、执行、持续能力和组合任务",
+        "同领域定位、详情、关系和只读工具",
+        "能力对等",
+        "合理能力发散不得越过接口、字段、权限、枚举和写操作确认红线",
+        "能力发散审计结论",
+    ]
+    missing_requirement_closed_loop_markers = [
+        marker
+        for marker in required_requirement_closed_loop_markers
+        if marker not in requirement_dev_closed_loop_workflow
+    ]
+    if missing_requirement_closed_loop_markers:
+        STATE.fail(
+            "base.requirement-dev-closed-loop.md 缺少 AI 能力发散审计闭环: "
+            + ", ".join(missing_requirement_closed_loop_markers)
+        )
+    else:
+        STATE.ok("base.requirement-dev-closed-loop.md 已覆盖 AI 能力发散审计与验收闭环")
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
