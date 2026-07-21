@@ -136,13 +136,16 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
       - ✅ **静态下拉正解：** 使用 `CommonEnum` 显式标注，并按接口字段链路命名：
         `const statusOptions: CommonEnum = [{ label: '启用', value: 1 }]`
      - ✅ 若下拉项需要保留额外字段，必须定义清晰的扩展类型，并让 `useSimpleSelecter<xxx>` 与 `com-form-select` 的实际选项结构保持一致。
-   - 🔴 **雷区 4 补充：枚举字段未按 Options 建模或过度拆常量**
+   - 🔴 **雷区 4 补充：枚举与常量未按指定规范处理**
      - ❌ 需求写了“枚举值：人工编辑、系统计算”，却把字段当普通输入框处理，或在列表 / 弹窗里直接写死中文展示。
-     - ❌ 仅用于下拉展示和提交的静态枚举，不要为每个枚举值机械声明 `xxx人工编辑 = '人工编辑'`、`xxx系统计算 = '系统计算'` 这类常量。
-     - ✅ **正解：** 静态枚举统一声明 `CommonEnum` Options，列表展示复用 `getListOptionLabel(value, xxxOptions)`，表单使用 `com-form-select` / 单选等枚举组件。
-     - ✅ 需求只给中文枚举展示值、未给接口 id/code 时，应先区分用途：纯展示或文档明确提交中文时，`options.value` 才可暂用中文；只要该值会参与业务判断、状态分支、禁用规则、按钮显隐、接口参数分支、组件 `active-value/inactive-value` 等逻辑，就必须使用 `TODO待联调_用途描述值` 占位，例如 `TODO待联调_启用状态启用值` / `TODO待联调_启用状态禁用值`，联调时再替换为后端 id/code/value。
+     - ❌ 仅用于下拉展示和提交的静态枚举，禁止为每个枚举值机械声明 `xxx人工编辑 = '人工编辑'`、`xxx系统计算 = '系统计算'` 这类常量。
+     - ❌ 单次使用的 Tab 标识、场景值、请求值、普通文案或 Mock 值，禁止仅因为名称较长、带 TODO、方便联调替换或以后可能复用就提前抽成常量。
+     - ✅ **指定规范：** Kunlun 页面中的枚举建模、常量抽离和待联调值处理，必须严格执行全局“函数抽象边界规范”“枚举映射规范”和“禁止静默发散规范”，本工作流不另设常量口径。
+     - ✅ 静态枚举统一声明 `CommonEnum` Options；普通文本展示复用 `getListOptionLabel(value, xxxOptions)`，标签展示优先使用 `com-map-tag`，表单使用 `com-form-select` / 单选等枚举组件。
+     - ✅ 仅用于 Options 展示、默认值和提交的枚举值，直接在 Options 中维护 `label/value`，默认值优先从 `xxxOptions[0].value` 等已确认项取得，不拆枚举项常量。
+     - ✅ 需求只给中文枚举展示值、未给接口 id/code 时，应先区分用途：纯展示或文档明确提交中文时，`options.value` 才可暂用中文；只要该值会参与业务判断、状态分支、禁用规则、按钮显隐、接口参数分支、组件 `active-value/inactive-value` 等逻辑，就必须使用 `TODO待联调_值_用途描述` 占位，例如 `TODO待联调_值_业务状态启用` / `TODO待联调_值_业务状态禁用`，联调时再替换为后端 id/code/value。
      - ✅ 模板中可以显式写 `if / else-if` 表达复杂业务分支，但分支条件必须基于接口值、枚举 value 或 TODO 待联调值，不能直接用“启用 / 禁用 / 系统计算”等展示文案判断。
-     - ✅ 默认值优先从 options 中取，例如 `xxxOptions[0].value`；只有枚举值被多处业务判断或跨文件复用时，才单独抽值常量。
+     - ✅ 只有已确认值被多个独立业务分支使用、跨文件复用，或形成稳定前端协议 / 明确业务集合时，才抽常量，并用 JSDoc 说明来源、具体值含义和使用范围。
    - 🔴 **雷区 5：主观猜测导入路径**
      - ❌ 凭主观经验直接手写未确认的工具包或组件路径，例如 `import request from '@/utils/request'`，导致严重的类型与位置错误。
      - ✅ **正解：** 除非完全确定，否则必须使用工具去 `view_file` 或搜索本项目真实正在生效的其他代码中的正确文件引用形式，确保完全契合此项目的基建位置。
@@ -357,14 +360,16 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ **正解：** 新增接口前必须先查看当前业务模块已有 API 文件，按业务域归属复用已有文件。例如页面属于“活动&推广管理”，且已存在 `src/api/csc/marketing-activities.ts`，则接口应优先追加到该文件中。
      - ✅ 只有当接口属于全新的独立业务域、预计会承载多个页面/一组完整能力，或用户明确要求拆分时，才允许新建 API 文件。
      - ✅ 如果没有充分依据新建 API 文件，也不要在 `src/api/xxx/index.ts` 中新增独立导出命名空间；应沿用既有模块导出，例如 `API.marketingActivities.xxx`。
-   - 🔴 **雷区 12 补充：API 类型规则重复维护与 URL 路径过度抽离**
-     - ❌ 禁止在 `kl-gen-page` 里另起一套 API 类型口径；API 请求入参、响应类型、`Omix` 使用边界、跨接口字段归属，统一以全局规则中的“API 函数入参类型定义规范”“API 响应类型定义规范”“跨接口字段归属规范”为准。
+   - 🔴 **雷区 12 补充：Kunlun API / 类型定义未按指定规范与 URL 路径过度抽离**
+     - ✅ **指定规范：** Kunlun API 定义、请求入参、响应类型、类型位置、`Omix` 使用边界和跨接口字段归属，必须严格执行全局“API 函数入参类型定义规范”“API 类型位置默认规范”“API 响应类型定义规范”“跨接口字段归属规范”和“type 与 interface 选择规范”；`kl-gen-page` 不维护第二套口径。
      - ❌ 禁止新写或修改接口时用 `request<Omix>` / `request<Array<Omix>>` 承接已确认响应，再在页面、Hook、下拉回调或跳转逻辑里读取字段。
-     - ✅ **正解：** Kunlun 页面生成时，接口响应记录、详情对象、远程下拉项、审批 / 跨页带入数据等被组件消费的结构，先按全局规则声明类型；页面、Hook、下拉泛型复用该类型或页面 ViewModel 类型。
-     - ✅ **正解：** 请求入参边界按全局规则处理：简单一次性入参内联，真实复用或外部显式引用再抽类型，真实动态结构或项目明确允许的复杂一次性结构才使用 `Omix`，并在组装处写清字段用途和提交格式。
-     - ✅ **正解：** 类型定义位置按全局规则处理，并优先参考当前 Kunlun PC 已有结构；同模块已有 `src/api/{module}/interface/*.resolver.ts` 时，API 请求 / 响应类型优先追加到该 resolver 类型文件。
-     - ✅ **正解：** 短小且只服务当前 API 的响应类型可贴近 API 函数；页面表单类型、ViewModel、前端 `_xxx` 扩展字段放页面 / 组件 `types.ts`，不要放进 API resolver，也不要放到 Options / enum 文件。
-     - ✅ **正解：** 新增手写类型默认优先使用 `type`；进入已有 `interface` 风格的 resolver 文件时沿用 `interface`，避免同文件风格混乱。
+     - ❌ Kunlun API 实现文件禁止新增顶层 `type` / `interface`；禁止以“不导出、只在当前 API 文件使用”为由，把独立类型留在 API 文件中。
+     - ✅ 短小、无嵌套且只使用一次的请求 / 响应结构，直接内联在 API 函数参数或 `request<T>` 泛型中。
+     - ✅ 字段较多、结构复杂、被多个 API 使用，或需要被页面、组件、Hook、下拉、跳转、提交参数显式引用的 API DTO，统一放入 `src/api/{module}/interface/{domain}.resolver.ts`。目标模块尚无 `interface/` 目录时，按同一项目结构补齐，不能退回 API 文件声明类型。
+     - ✅ 新增 resolver 后必须补齐完整导出链：`src/api/{module}/interface/index.ts` 导出 resolver，再由 `src/api/interface.ts` 导出模块 interface；API、页面和组件通过项目统一出口引用，例如 `import * as env from '@/api/interface'`。
+     - ✅ 新增类型前必须搜索 Kunlun 全项目的 API 类型目录、模块出口、统一出口和实际导入方式，禁止只参考当前业务模块或 SRM。CRM、SYS、Public、MC、SRM 等模块现有 resolver 链路都属于项目依据。
+     - ✅ resolver 文件沿用项目既有 `interface` 风格；页面表单类型、ViewModel、前端 `_xxx` 扩展字段放页面 / 组件 `types.ts`，不要放进 API resolver，也不要放到 Options / enum 文件。
+     - ✅ API 实现文件只保留请求函数、必要导入、请求配置和函数内部 Mock；存量 API 文件中的独立类型属于历史写法，不得作为新代码模板，也不要求本次顺手重构无关存量代码。
      - ❌ 禁止为同一组 API 抽 URL 前缀常量再拼接路径，例如 `XXX_URL_PREFIX + '/page'`。
      - ✅ **正解：** API 函数里的 `url` 必须直接写完整接口路径，便于打开函数时立即确认真实请求地址。
      - ✅ 只有跨环境配置、网关基地址、或项目已有统一请求基建要求时，才允许使用公共路径能力；普通业务接口路径不抽局部常量。
