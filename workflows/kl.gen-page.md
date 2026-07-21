@@ -81,7 +81,7 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ `getListOptionLabel(value, xxxOptions)` 只用于普通文本枚举展示；一旦展示形态是 tag、状态标签、颜色标签，优先级低于 `com-map-tag`。
      - ✅ `com-map-tag` 已内置空值展示、命中映射展示、未命中展示原始值等逻辑，禁止在业务页面重复手写同类兜底。
      - ✅ `com-map-tag` 只负责展示，不作为表单控件；需要 `v-model`、校验、提交的字段，应使用 `com-form-select`、`com-form-radio` 等表单组件。禁用态只读表单字段，优先使用禁用态表单组件复用同一份 Options。
-     - ✅ 如果标签展示还包含额外业务交互，例如点击跳转、带确认操作、复杂插槽内容，才允许不用 `com-map-tag`，但必须说明原因并仍按模板列插槽结构实现。
+     - ✅ 表格列中的简单标签展示必须由 `formatterRender` 直接返回 `com-map-tag`；只有标签还包含额外业务交互，导致列配置明显变长、难以维护时，才改用列插槽，并说明原因。
      - ✅ `com-map-tag` 的统一展示属性必须优先写在组件 props 上，例如同一列所有标签都不需要圆角时，写 `<com-map-tag :value="value" :map="xxxStatusOptions" :round="false" />`。
      - ✅ 只有某个枚举项需要不同于其他枚举项的展示属性时，才把 `round`、`size`、`effect`、`class`、`style` 等写进 Options / TagMap 的对应项。
      - ❌ 禁止所有枚举项都重复写相同展示配置，例如每个 option 都写 `round: false`、相同 `size` 或相同 `effect`；这类统一样式应外提到组件 props。
@@ -94,10 +94,16 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
          </el-tag>
      </template>
 
-     <!-- ✅ 正确：标签映射交给项目约定的 com-map-tag -->
-     <template #col_xxxStatus="{ value }">
-         <com-map-tag :value="value" :map="xxxStatusOptions" />
-     </template>
+     <!-- ✅ 正确：简单标签映射通过 formatterRender 返回项目约定的 com-map-tag -->
+     <script setup lang="tsx">
+     const columns = [
+         {
+             label: '业务状态',
+             prop: 'xxxStatus',
+             formatterRender: ({ value }) => <com-map-tag value={value} map={xxxStatusOptions} />
+         }
+     ]
+     </script>
 
      <!-- ❌ 禁止：所有项都重复写相同展示属性 -->
      <script setup lang="ts">
@@ -107,21 +113,21 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      ]
      </script>
 
-     <template #col_xxxStatus="{ value }">
-         <com-map-tag :value="value" :map="xxxStatusOptions" />
-     </template>
-
      <!-- ✅ 正确：统一展示属性写在组件 props 上 -->
-     <script setup lang="ts">
+     <script setup lang="tsx">
      const xxxStatusOptions: CommonEnum<{ type: 'success' | 'warning' }> = [
          { label: '状态A', value: 1, type: 'success' },
          { label: '状态B', value: 2, type: 'warning' }
      ]
-     </script>
 
-     <template #col_xxxStatus="{ value }">
-         <com-map-tag :value="value" :map="xxxStatusOptions" :round="false" />
-     </template>
+     const columns = [
+         {
+             label: '业务状态',
+             prop: 'xxxStatus',
+             formatterRender: ({ value }) => <com-map-tag value={value} map={xxxStatusOptions} round={false} />
+         }
+     ]
+     </script>
 
      <!-- ✅ 正确：下拉 option 中的状态标签也复用 com-map-tag -->
      <template #option="optionItem">
@@ -280,7 +286,7 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
    - 🔴 **雷区 10 补充：业务组件拆分边界**
      - ❌ 禁止为了减少 `index.vue` 或弹窗文件行数，把标准列表页的搜索区、表格区、header 操作区、tool 汇总区，或标准添加/编辑弹窗的普通表单区强行拆成子组件。
      - ❌ 禁止把 `list-a.vue` / `list-b.vue` / `dialog-update.vue` 这类 dev-template 标准骨架拆散使用；模板文件本身表达的就是页面或弹窗主职责。
-     - ✅ **正解：** 标准列表页默认保持 `搜索区 + 表格 + header/tool 插槽 + 列插槽` 在同一个页面文件中，便于按模板查找和维护。
+     - ✅ **正解：** 标准列表页默认保持 `搜索区 + 表格 + columns 列渲染配置 + header/tool 插槽 + 必要的复杂列插槽` 在同一个页面文件中，便于按模板查找和维护。
      - ✅ **正解：** 标准添加/编辑弹窗默认保持 `sky-dialog + sky-form + 表单字段 + 提交/回显` 在同一个弹窗文件中，普通表单字段不单独拆组件。
      - ✅ 只有弹窗或页面内部存在动态表格、复杂配置区、独立校验区、上传/选择器、可复用业务块等明确业务子模块时，才拆分该子模块。
      - ✅ 拆分后的子组件必须有清晰业务边界：子组件负责自身状态、局部交互、局部校验和样式；父组件只负责打开关闭、主提交、接口调用和成功后的列表刷新。
@@ -452,12 +458,18 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
          {{ row.TODO业务说明 || '-' }}
      </sky-ellipsis-tooltip>
      ```
-   - 🔴 **雷区 15 补充：表格列插槽入口混用**
+   - 🔴 **雷区 15 补充：表格列渲染优先级与插槽入口**
+     - ❌ 需要简单自定义单元格展示时，默认编写 `<template #col_xxx>`，导致模板堆积大量零散列插槽。
      - ❌ 使用 `<template #col_xxx>` 自定义列时，又在对应 `columns` 配置里追加 `slot: true`。
-     - ❌ 未查看 `sky-table-pagination` 源码，只凭 Element Plus 或其他项目经验猜测列插槽写法。
-     - ✅ **正解：** `sky-table-pagination` 会优先识别 `#col_${prop}` 插槽；使用这种插槽时，`columns` 中只需要配置同名 `prop`，不需要也不应该追加 `slot: true`。
+     - ❌ 未查看 `sky-table-pagination` 源码，只凭 Element Plus 或其他项目经验猜测列渲染与插槽写法。
+     - ✅ **正解：** `sky-table-pagination` 需要自定义单元格渲染时，优先在 `columns` 中使用 `formatterRender`。
+     - ✅ 字符串拼接、枚举标签、简单空值展示，以及返回单个已有业务组件并传入少量 Props 的场景，均直接使用 `formatterRender`。
+     - ✅ 已有单元格组件可以直接由 `formatterRender` 返回；禁止仅为了调用该组件再声明一层列插槽。
+     - ✅ 只有渲染结构包含多个业务区块、较多条件分支或循环、复杂交互、嵌套插槽等内容，导致 `formatterRender` 明显拉长列配置、降低可读性和维护性时，才使用 `#col_${prop}` 列插槽。
+     - ✅ 判断依据是维护复杂度，不机械规定代码行数；简单 JSX 即使需要换行书写，仍优先保留在 `formatterRender`。
+     - ✅ `sky-table-pagination` 会优先识别 `#col_${prop}` 插槽；使用这种插槽时，`columns` 中只需要配置同名 `prop`，不得追加 `slot: true`。
      - ✅ 只有确实要使用 `item.slot` 分支对应的原始 `prop` 命名插槽时，才允许配置 `slot: true`，并且必须先确认组件源码和模板示例。
-     - ✅ 页面生成时必须参考 `src/components/dev-template/list-a.vue` / `list-b.vue` 的列插槽示例，不要把两套入口混用。
+     - ✅ 页面生成时必须参考 `src/components/dev-template/list-a.vue` / `list-b.vue`，并按本节优先级选择 `formatterRender` 或复杂列插槽，禁止混用两套入口。
    - 🔴 **雷区 16：时间字段列宽分配不合理**
      - ❌ 针对时间类字段没有设定宽度，导致在不同屏幕尺寸下可能出现折行或挤压，影响阅读体验。
      - ✅ **正解：** 只要是包含完整日期时间的字段（例如展示格式为 `YYYY-MM-DD HH:mm:ss`），在 `columns` 配置中**必须为其显式设置 `minWidth: 160`**，确保时间信息始终保持单行完整展示。
