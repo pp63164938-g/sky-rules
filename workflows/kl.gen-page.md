@@ -411,6 +411,19 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
      - ✅ 行内操作插槽使用 `#col_operate`；未启用操作列时不要保留 `operateCol` 或 `#col_operate`。
      - ✅ `src/components/dev-template/list-a.vue` / `list-b.vue` 中的操作列仅作为可选示例，页面生成默认仍按 header 左侧操作按钮模式克隆。
      - ✅ 如果使用操作列，优先按项目已有封装方式处理，例如 `com-table-operate`，不要随手堆多个裸 `el-button`。
+     - 🔴 **`com-table-operate` 的 `row-id` 是必传值**：每次使用都必须显式传入，即使当前操作暂时不需要 loading，也不允许省略。
+     - ✅ 默认取业务主键：`:row-id="row.id"`；“默认取 id”不代表可以不写该属性。
+     - ✅ 当前接口没有 `id`，或 `id` 不能唯一标识行时，必须根据接口文档、抓包、后端或用户确认，传入其他稳定唯一字段、前端组合 `_rowKey`，或取值函数。
+     - ✅ `row-id` 最终必须得到有效的字符串或数字；禁止使用数组下标、分页内序号或未经确认唯一性的展示文案。
+     - ❌ Vue 的 `:key`、表格的 `primary-key` 不能代替 `com-table-operate` 的 `row-id`，组件仍须显式传入。
+
+     ```vue
+     <!-- 常规场景：默认取业务主键 id，但仍必须显式传入 -->
+     <com-table-operate :row-id="row.id" :row :data="operateList" />
+
+     <!-- 非 id 场景：传入已经确认的稳定唯一值 -->
+     <com-table-operate :row-id="row._rowKey" :row :data="operateList" />
+     ```
    - 🔴 **雷区 13 补充：表头操作按钮顺序混乱**
      - ❌ 禁止把 `添加` 放在 `编辑 / 删除` 后面，导致列表页常规维护入口顺序不一致。
      - ❌ 禁止按编码时想到什么就写什么的顺序排列按钮。
