@@ -70,6 +70,7 @@ description: 工作流用途说明
 | 场景 | 推荐工作流 |
 | --- | --- |
 | 新增 / 优化全局规则 | `base.update-rules.md` |
+| 根据页面路径或项目说明识别项目目录和专属要求 | `base.project-context.md` |
 | 根据接口文档联调 | `base.debugging.md`、`base.docs.md` |
 | 根据需求文档闭环推进开发 | `base.requirement-dev-closed-loop.md` |
 | 生成 Kunlun 页面 | `kl.gen-page.md` |
