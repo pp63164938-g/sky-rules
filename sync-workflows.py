@@ -8,6 +8,7 @@ Sky Rules 全量同步脚本
   python sync-workflows.py --no-git # 跳过 git，仅同步全部
   python sync-workflows.py --print-targets # 只打印本机解析到的同步目标
   python sync-workflows.py --doctor # 体检本机同步配置，不执行同步
+  python sync-workflows.py --verify # 只验证各平台工作流伴随资源
   python sync-workflows.py --no-git --include-missing-targets # 预创建全部默认目标
   python sync-workflows.py --no-git --skip-rules-check # 跳过内置规则自检
 
@@ -37,6 +38,8 @@ SRC_WORKFLOWS = ROOT / "workflows"
 SRC_RULES = ROOT / "rules"
 RULES_MANIFEST = SRC_RULES / "rules-manifest.json"
 CHECK_RULES_SCRIPT = ROOT / "scripts" / "check-rules.py"
+PROJECT_CATALOG_FILE = ROOT / "project-catalog.json"
+PROJECT_CONTEXT_WORKFLOW_STEM = "base.project-context"
 SRC_SKILLS = ROOT / "skills"
 CONFIG_TARGET_FILES = [ROOT / "sync-targets.json", ROOT / "sync-targets.local.json"]
 CONFIG_WARNINGS: list[str] = []
@@ -425,6 +428,27 @@ def is_same_file_content(left_file: Path, right_file: Path) -> bool:
         return False
 
 
+def get_workflow_companion_target(item: dict[str, object]) -> Path | None:
+    """获取工作流目标中的 project-catalog.json 伴随资源路径。"""
+    src = item.get("src")
+    if not isinstance(src, Path) or src.resolve() != SRC_WORKFLOWS.resolve():
+        return None
+
+    dst = item.get("dst")
+    if not isinstance(dst, Path):
+        raise ValueError(f"{item['name']}: 工作流目标路径无效")
+
+    mode = str(item.get("mode", ""))
+    if mode == "mirror":
+        return dst / PROJECT_CATALOG_FILE.name
+
+    if mode == "agents_skills":
+        skill_name = slugify(PROJECT_CONTEXT_WORKFLOW_STEM)
+        return dst / skill_name / PROJECT_CATALOG_FILE.name
+
+    raise ValueError(f"{item['name']}: 工作流同步模式 {mode} 尚未支持伴随资源")
+
+
 def get_workflow_skill_names(
     src: Path = SRC_WORKFLOWS,
     pattern: str = "*.md",
@@ -595,6 +619,15 @@ def diagnose_target(item: dict[str, object]) -> str:
     print(f"    路径: {target_path}")
     print(f"    来源: {get_target_source(item)}")
 
+    try:
+        companion_target = get_workflow_companion_target(item)
+    except ValueError as error:
+        print(f"    伴随资源: FAIL {error}")
+        return "fail"
+
+    if companion_target is not None:
+        print(f"    伴随资源: {companion_target}")
+
     if not should_sync_target(item, include_missing_targets=False):
         print(f"    检测: SKIP {get_skip_reason(item)}，默认同步会跳过")
         print("    提示: 如需同步到该工具，先启动工具生成目录、配置 SKY_RULES_*，或使用 --include-missing-targets")
@@ -664,7 +697,7 @@ def sync_file(name: str, src: Path, dst: Path) -> None:
         return
 
     dst.parent.mkdir(parents=True, exist_ok=True)
-    if dst.exists() and dst.stat().st_mtime >= src.stat().st_mtime:
+    if dst.exists() and is_same_file_content(src, dst):
         print(f"  SKIP {name}: 无变更")
         return
 
@@ -759,6 +792,19 @@ def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str, exclude: o
     print(f"  OK {name}: 生成 {copied}, 删除过期 {removed}")
 
 
+def sync_workflow_companion(item: dict[str, object]) -> None:
+    """同步与项目上下文工作流不可拆分的目录数据。"""
+    companion_target = get_workflow_companion_target(item)
+    if companion_target is None:
+        return
+
+    sync_file(
+        f"{item['name']} 伴随资源",
+        PROJECT_CATALOG_FILE,
+        companion_target,
+    )
+
+
 def sync_all(include_missing_targets: bool = False) -> None:
     """执行全部同步任务。"""
     print_config_warnings()
@@ -780,6 +826,52 @@ def sync_all(include_missing_targets: bool = False) -> None:
             sync_codex_rules(item["name"], item["src"], item["dst"])
         elif mode == "agents_skills":
             sync_agents_skills(item["name"], item["src"], item["dst"], item["pattern"], item.get("exclude"))
+
+        sync_workflow_companion(item)
+
+
+def verify_workflow_companions(include_missing_targets: bool = False) -> bool:
+    """验证所有启用平台的项目目录伴随资源与源文件完全一致。"""
+    print("[工作流伴随资源验证]")
+    if not PROJECT_CATALOG_FILE.exists():
+        print(f"  FAIL 源文件不存在: {PROJECT_CATALOG_FILE}")
+        return False
+
+    checked_count = 0
+    failure_count = 0
+    for item in SYNC_MAP:
+        if not should_sync_target(item, include_missing_targets):
+            continue
+
+        try:
+            companion_target = get_workflow_companion_target(item)
+        except ValueError as error:
+            print(f"  FAIL {error}")
+            failure_count += 1
+            continue
+
+        if companion_target is None:
+            continue
+
+        checked_count += 1
+        if not companion_target.exists():
+            print(f"  FAIL {item['name']}: 缺少 {companion_target}")
+            failure_count += 1
+            continue
+
+        if not is_same_file_content(PROJECT_CATALOG_FILE, companion_target):
+            print(f"  FAIL {item['name']}: 内容与源文件不一致 ({companion_target})")
+            failure_count += 1
+            continue
+
+        print(f"  OK {item['name']}: {companion_target}")
+
+    if failure_count:
+        print(f"  结论: FAIL，{failure_count} 个平台目标不一致")
+        return False
+
+    print(f"  结论: OK，{checked_count} 个平台目标与源文件一致")
+    return True
 
 
 def print_codex_verification() -> None:
@@ -825,6 +917,9 @@ def print_sync_targets() -> None:
 
     for item in SYNC_MAP:
         print(f"  {item['name']}: {item['dst']}")
+        companion_target = get_workflow_companion_target(item)
+        if companion_target is not None:
+            print(f"    伴随资源: {companion_target}")
 
 
 def run_doctor() -> None:
@@ -851,12 +946,22 @@ def run_doctor() -> None:
         workflow_count = 0
         print(f"  FAIL 工作流目录不存在: {SRC_WORKFLOWS}")
 
+    if PROJECT_CATALOG_FILE.exists():
+        print(f"  OK 项目目录源文件: {PROJECT_CATALOG_FILE}")
+    else:
+        print(f"  FAIL 项目目录源文件不存在: {PROJECT_CATALOG_FILE}")
+
     print()
     print("[目标路径]")
     target_results = [diagnose_target(item) for item in SYNC_MAP]
 
     config_ok = not CONFIG_WARNINGS
-    source_ok = bool(rule_source_files) and SRC_WORKFLOWS.exists() and workflow_count > 0
+    source_ok = (
+        bool(rule_source_files)
+        and SRC_WORKFLOWS.exists()
+        and workflow_count > 0
+        and PROJECT_CATALOG_FILE.exists()
+    )
     targets_ok = "fail" not in target_results
     skip_count = target_results.count("skip")
     print()
@@ -876,6 +981,7 @@ def main() -> None:
     no_git = "--no-git" in sys.argv
     print_targets = "--print-targets" in sys.argv
     doctor = "--doctor" in sys.argv
+    verify = "--verify" in sys.argv
     include_missing_targets = "--include-missing-targets" in sys.argv
     skip_rules_check = "--skip-rules-check" in sys.argv
 
@@ -885,6 +991,12 @@ def main() -> None:
 
     if doctor:
         run_doctor()
+        return
+
+    if verify:
+        print_config_warnings()
+        if not verify_workflow_companions(include_missing_targets):
+            raise SystemExit(1)
         return
 
     print("=" * 45)
@@ -902,6 +1014,8 @@ def main() -> None:
         git_commit_and_push()
 
     sync_all(include_missing_targets)
+    if not verify_workflow_companions(include_missing_targets):
+        raise SystemExit("工作流伴随资源验证失败，已阻断同步完成状态")
     print_codex_verification()
 
     if not skip_rules_check:

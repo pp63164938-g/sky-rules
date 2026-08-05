@@ -7,6 +7,7 @@
 ```
 sky-rules/
 ├── AGENTS.md              # AI 入口说明：修改边界、先读顺序、新增规则流程
+├── project-catalog.json   # 项目需求与接口文档来源目录
 ├── rules/                  # 全局规则
 │   ├── README.md          # 全局规则维护索引
 │   ├── rules-manifest.json # 全局规则拼接清单
@@ -34,6 +35,7 @@ sky-rules/
 | 入口 | 面向对象 | 作用 |
 |------|----------|------|
 | `AGENTS.md` | AI | 进入本仓库后的优先读取入口，说明红线、先读顺序、文件职责和新增规则流程 |
+| `project-catalog.json` | AI | 按独立条目记录本地、Git 或网页文档来源及项目专属读取要求 |
 | `README.md` | 人 / AI | 仓库维护手册，说明目录结构、同步方式、接入方式和同步目标 |
 | `rules/README.md` | 人 / AI | 全局规则维护索引，说明规则归属、章节策略、写法模板和维护自检 |
 | `workflows/README.md` | 人 / AI | 工作流维护索引，说明工作流命名、归属、结构和扩展标准 |
@@ -78,6 +80,7 @@ sky-rules/
 | **Git 提交、推送并同步到编辑器** | `commit-push-and-sync-to-editors.bat` | `python sync-workflows.py` |
 | **只查看当前电脑会同步到哪里** | - | `python sync-workflows.py --print-targets` |
 | **新电脑接入体检（推荐首次执行）** | - | `python sync-workflows.py --doctor` |
+| **只验证多平台工作流伴随资源一致性** | - | `python sync-workflows.py --verify` |
 | **规则仓库自检（推荐每次规则变更后执行）** | - | `python scripts/check-rules.py` |
 | **强制预创建全部默认目标** | - | `python sync-workflows.py --no-git --include-missing-targets` |
 | **跳过同步脚本内置自检（仅排障时使用）** | - | `python sync-workflows.py --no-git --skip-rules-check` |
@@ -89,6 +92,7 @@ sky-rules/
 | `workflows/*.md` | `~/.codeium/windsurf/global_workflows/` | Windsurf 工作流 |
 | `workflows/*.md` | `~/.gemini/antigravity/global_workflows/` | Antigravity 工作流 |
 | `workflows/*.md` | `~/.codex/skills/` | Codex Skills |
+| `project-catalog.json` | 所有启用平台的 `base-project-context` 工作流或 Skill 同目录 | 项目上下文工作流伴随资源；内容必须与唯一源文件一致 |
 | `rules/rules-manifest.json` | `~/.gemini/GEMINI.md` | Antigravity 全局规则（按 manifest 拼接） |
 | `rules/rules-manifest.json` | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 全局规则（按 manifest 拼接） |
 | `rules/rules-manifest.json` | `~/.codex/AGENTS.md` | Codex 全局规则（按 manifest 拼接并去除 frontmatter） |
@@ -104,14 +108,16 @@ sky-rules/
 - `README.md`、`AGENTS.md`、`rules/README.md`、`workflows/base.update-rules.md` 是否能指向 manifest 和自检入口
 - 按 manifest 拼接后的全局规则是否仍包含关键红线、联调、前端样式、跨接口字段、后端规则和同步验证规则
 - `sync-workflows.py` 是否仍支持 `assembled_rules`、`codex_rules` 和 `workflows/README.md` 排除
+- 所有启用平台的 `project-catalog.json` 是否存在，并与仓库根目录唯一源文件完全一致
 - 已生成的 Codex `base-update-rules` Skill 是否能看到规则拆分定位和自检入口
 
 同步脚本默认自动执行闭环：
 
 1. 同步前执行 `python scripts/check-rules.py --source-only`，只检查源规则、索引和同步脚本能力。
 2. 同步规则、工作流和 Codex Skills。
-3. 执行 Codex 落盘和 `prompt-input` 可见性验证。
-4. 同步后执行 `python scripts/check-rules.py`，检查同步产物也已更新。
+3. 验证所有启用平台的工作流伴随资源一致性。
+4. 执行 Codex 落盘和 `prompt-input` 可见性验证。
+5. 同步后执行 `python scripts/check-rules.py`，检查同步产物也已更新。
 
 手动验收时可直接运行：
 
@@ -141,6 +147,7 @@ Codex 验证：AGENTS.md 已落盘，Skills 20 个，prompt-input 可见 base-de
 - 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
 - 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
+- 工作流资源包：`base-project-context` 与 `project-catalog.json` 不可拆分；所有工作流目标自动同步并校验伴随目录文件
 - 全局规则拼接：通过 `rules/rules-manifest.json` 维护规则源文件顺序，拆分源文件后仍生成完整全局规则
 - 同步排除：目录同步支持 `exclude` 排除说明文件，内置工作流同步会排除 `workflows/README.md`
 - 内置自检：正常同步默认执行同步前 `--source-only` 自检和同步后全量自检，避免只靠 AI 手动记忆闭环步骤
@@ -241,6 +248,8 @@ python sync-workflows.py --no-git
 ### 扩展其他编辑器
 
 新增其他编辑器时，优先使用配置文件，不直接改 `sync-workflows.py`：
+
+当同步目标的 `source` 为 `workflows` 时，`mirror` 和 `agents_skills` 模式会自动同步 `base-project-context` 的伴随资源 `project-catalog.json`。新平台不需要额外维护目录文件目标；如果新增的工作流同步模式尚未实现伴随资源布局，体检、同步和 `--verify` 必须失败，禁止产生缺少目录文件的平台产物。
 
 | 文件 | 用途 | 是否建议提交 |
 |------|------|--------------|

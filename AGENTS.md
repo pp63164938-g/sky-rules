@@ -15,6 +15,7 @@
 | 场景 | 优先读取 |
 | --- | --- |
 | 了解仓库用途、同步方式 | `README.md` |
+| 定位项目需求 / 接口文档 | `project-catalog.json`、`workflows/base.project-context.md` |
 | 新增 / 修改全局规则 | `rules/README.md`、`rules/rules-manifest.json`、目标规则文件 |
 | 新增 / 修改工作流 | `workflows/README.md`、目标 `workflows/*.md` |
 | 扩展同步目标 | `README.md`、`sync-targets.example.json`、`sync-workflows.py` |
@@ -26,6 +27,7 @@
 | 文件 / 目录 | 职责 |
 | --- | --- |
 | `README.md` | 人类维护手册，说明仓库结构、同步命令、接入方式 |
+| `project-catalog.json` | 项目文档目录数据，按独立条目记录本地、Git 或网页文档来源及专属要求 |
 | `rules/README.md` | 全局规则维护索引，说明规则归属、章节策略、写法模板 |
 | `rules/rules-manifest.json` | 全局规则拼接清单，决定各规则源文件的同步顺序 |
 | `rules/global-rules.md` | 全局规则常驻入口，只承载核心理念、P0 红线、场景索引等高优先级内容 |

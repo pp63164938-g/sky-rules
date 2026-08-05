@@ -1,0 +1,36 @@
+{
+  "projects": [
+    {
+      "project": "ai_pm",
+      "description": "ai_pm Git 需求文档仓库",
+      "match": ["ai_pm", "需求文档", "需求版本"],
+      "docs": "ai_pm",
+      "rules": [
+        "该文档来源为 Git 仓库；相对目录不存在时，在当前项目所在磁盘或挂载点的常见项目目录内，按目录名或 origin 远端仓库名 ai_pm 定位，禁止全盘扫描。",
+        "读取需求前必须执行 git fetch origin main，获取远端 main 最新内容。",
+        "使用 git ls-tree 和 git show 从 origin/main 快照定位并读取需求，禁止执行 git pull、切换分支或覆盖本地工作区。",
+        "结合用户明确提供的需求、业务项目名称、开发分支、页面路径、版本号和关键词推断对应版本需求；只有一个候选时继续，存在多个候选或依据不足时列出候选并让用户确认。"
+      ]
+    },
+    {
+      "project": "kunlun-test-api-docs",
+      "description": "昆仑测试环境接口文档",
+      "match": ["skyline-kunlun-ui-main", "昆仑", "测试环境", "tyhtest"],
+      "docs": "https://gw-kunlun.tyhtest.com/doc.html#/home",
+      "rules": [
+        "该文档属于测试环境网页接口文档，无需账号密码，可以直接解析。",
+        "只允许用于昆仑测试环境接口查证，禁止用于补充开发环境接口字段、参数或枚举。"
+      ]
+    },
+    {
+      "project": "kunlun-dev-api-docs",
+      "description": "昆仑开发环境接口文档",
+      "match": ["skyline-kunlun-ui-main", "昆仑", "开发环境", "tyhdev"],
+      "docs": "https://gw-kunlun.tyhdev.com/doc.html#/home",
+      "rules": [
+        "该文档属于开发环境网页接口文档，无需账号密码，可以直接解析。",
+        "只允许用于昆仑开发环境接口查证，禁止用于补充测试环境接口字段、参数或枚举。"
+      ]
+    }
+  ]
+}

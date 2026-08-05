@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,11 +18,14 @@ HOME = Path.home().resolve()
 RULES_DIR = ROOT / "rules"
 WORKFLOWS_DIR = ROOT / "workflows"
 MANIFEST_FILE = RULES_DIR / "rules-manifest.json"
+PROJECT_CATALOG_FILE = ROOT / "project-catalog.json"
 
 README_FILE = ROOT / "README.md"
 AGENTS_FILE = ROOT / "AGENTS.md"
 RULES_README_FILE = RULES_DIR / "README.md"
+WORKFLOWS_README_FILE = WORKFLOWS_DIR / "README.md"
 UPDATE_RULES_WORKFLOW = WORKFLOWS_DIR / "base.update-rules.md"
+PROJECT_CONTEXT_WORKFLOW = WORKFLOWS_DIR / "base.project-context.md"
 REQUIREMENT_DEV_CLOSED_LOOP_WORKFLOW = WORKFLOWS_DIR / "base.requirement-dev-closed-loop.md"
 SYNC_SCRIPT = ROOT / "sync-workflows.py"
 SYNC_TARGETS_EXAMPLE = ROOT / "sync-targets.example.json"
@@ -195,6 +199,80 @@ def load_manifest_entries() -> list[dict[str, str]]:
     return entries
 
 
+def check_project_catalog() -> None:
+    """确认项目文档目录遵循一来源一条目结构。"""
+    failure_count = len(STATE.failures)
+    raw_catalog = load_json(PROJECT_CATALOG_FILE)
+    if not isinstance(raw_catalog, dict):
+        STATE.fail("project-catalog.json 根节点必须是对象")
+        return
+
+    extra_root_keys = sorted(set(raw_catalog) - {"projects"})
+    if extra_root_keys:
+        STATE.fail(
+            "project-catalog.json 根节点只允许 projects，禁止新增字段: "
+            + ", ".join(extra_root_keys)
+        )
+
+    raw_projects = raw_catalog.get("projects")
+    if not isinstance(raw_projects, list) or not raw_projects:
+        STATE.fail("project-catalog.json 的 projects 必须是非空数组")
+        return
+
+    allowed_project_keys = {"project", "description", "match", "docs", "rules"}
+    seen_projects: set[str] = set()
+    for index, raw_project in enumerate(raw_projects, start=1):
+        prefix = f"project-catalog.json projects[{index}]"
+        if not isinstance(raw_project, dict):
+            STATE.fail(f"{prefix} 必须是对象")
+            continue
+
+        missing_project_keys = sorted(allowed_project_keys - set(raw_project))
+        if missing_project_keys:
+            STATE.fail(f"{prefix} 缺少模板字段: {', '.join(missing_project_keys)}")
+
+        extra_project_keys = sorted(set(raw_project) - allowed_project_keys)
+        if extra_project_keys:
+            STATE.fail(
+                f"{prefix} 只允许 project/description/match/docs/rules，禁止新增字段: "
+                + ", ".join(extra_project_keys)
+            )
+
+        project = str(raw_project.get("project", "")).strip()
+        description = str(raw_project.get("description", "")).strip()
+        docs = raw_project.get("docs")
+
+        if not project:
+            STATE.fail(f"{prefix}.project 不能为空")
+        elif project in seen_projects:
+            STATE.fail(f"project-catalog.json project 重复: {project}")
+        else:
+            seen_projects.add(project)
+
+        if not description:
+            STATE.fail(f"{prefix}.description 不能为空")
+
+        if not isinstance(docs, str) or not docs.strip():
+            STATE.fail(f"{prefix}.docs 必须是单一本地 / Git 相对目录或 HTTPS URL 字符串")
+        else:
+            docs = docs.strip()
+            if docs.startswith("http://"):
+                STATE.fail(f"{prefix}.docs 网页文档必须使用 HTTPS: {docs}")
+            elif not docs.startswith("https://") and Path(docs).is_absolute():
+                STATE.fail(f"{prefix}.docs 禁止保存绝对路径: {docs}")
+
+        for key in ["match", "rules"]:
+            values = raw_project.get(key, [])
+            if not isinstance(values, list) or any(
+                not isinstance(value, str) or not value.strip()
+                for value in values
+            ):
+                STATE.fail(f"{prefix}.{key} 必须是字符串数组")
+
+    if len(STATE.failures) == failure_count:
+        STATE.ok(f"project-catalog.json 结构正常，共 {len(raw_projects)} 个独立文档来源")
+
+
 def get_manifest_paths(entries: list[dict[str, str]]) -> set[str]:
     """获取 manifest 中的规则相对路径集合。"""
     return {entry["path"] for entry in entries}
@@ -230,9 +308,11 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
 def check_index_files(entries: list[dict[str, str]]) -> None:
     """确认维护索引能指向关键结构和规则源文件。"""
     rules_readme = read_text(RULES_README_FILE)
+    workflows_readme = read_text(WORKFLOWS_README_FILE)
     root_readme = read_text(README_FILE)
     agents = read_text(AGENTS_FILE)
     update_rules_workflow = read_text(UPDATE_RULES_WORKFLOW)
+    project_context_workflow = read_text(PROJECT_CONTEXT_WORKFLOW)
     requirement_dev_closed_loop_workflow = read_text(REQUIREMENT_DEV_CLOSED_LOOP_WORKFLOW)
 
     missing_from_rules_readme = [
@@ -253,6 +333,9 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "assembled_rules",
         "codex_rules",
         "scripts/check-rules.py",
+        "project-catalog.json",
+        "工作流资源包",
+        "--verify",
         "闭环验收回执",
         "内置自检",
         "--skip-rules-check",
@@ -265,7 +348,27 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     if missing_root_readme_markers:
         STATE.fail(f"README.md 缺少维护闭环说明: {', '.join(missing_root_readme_markers)}")
     else:
-        STATE.ok("README.md 已说明 manifest、拼接模式和自检入口")
+        STATE.ok("README.md 已说明 manifest、工作流资源包和自检入口")
+
+    required_workflows_readme_markers = [
+        "工作流伴随资源",
+        "project-catalog.json",
+        "mirror",
+        "agents_skills",
+        "一致性验证必须失败",
+    ]
+    missing_workflows_readme_markers = [
+        marker
+        for marker in required_workflows_readme_markers
+        if marker not in workflows_readme
+    ]
+    if missing_workflows_readme_markers:
+        STATE.fail(
+            "workflows/README.md 缺少伴随资源维护约束: "
+            + ", ".join(missing_workflows_readme_markers)
+        )
+    else:
+        STATE.ok("workflows/README.md 已说明跨平台工作流伴随资源约束")
 
     required_agents_markers = [
         "rules/README.md",
@@ -274,6 +377,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "rules/frontend/",
         "rules/backend/",
         "scripts/check-rules.py",
+        "project-catalog.json",
         "闭环验收回执",
         "内置自检",
         "--skip-rules-check",
@@ -308,6 +412,29 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         STATE.fail(f"base.update-rules.md 缺少规则维护闭环: {', '.join(missing_update_rules_markers)}")
     else:
         STATE.ok("base.update-rules.md 已串联拆分定位、manifest 和自检入口")
+
+    required_project_context_markers = [
+        "一来源一条目",
+        "固定模板字段",
+        "project-catalog.json",
+        "多平台一致性",
+        "工作流文件或 Skill 文件同目录",
+        "https://",
+        "git fetch origin main",
+        "禁止默认选择或跨环境借用字段",
+    ]
+    missing_project_context_markers = [
+        marker
+        for marker in required_project_context_markers
+        if marker not in project_context_workflow
+    ]
+    if missing_project_context_markers:
+        STATE.fail(
+            "base.project-context.md 缺少多来源目录读取约束: "
+            + ", ".join(missing_project_context_markers)
+        )
+    else:
+        STATE.ok("base.project-context.md 已覆盖一来源一条目、Git 和网页文档读取")
 
     required_requirement_closed_loop_markers = [
         "AI 能力发散审计",
@@ -400,6 +527,11 @@ def check_sync_script() -> None:
         "codex_rules",
         "build_rules_content",
         "run_rules_check",
+        "PROJECT_CATALOG_FILE",
+        "get_workflow_companion_target",
+        "sync_workflow_companion",
+        "verify_workflow_companions",
+        "--verify",
         "--skip-rules-check",
         "--source-only",
         '"exclude": ["README.md"]',
@@ -413,7 +545,7 @@ def check_sync_script() -> None:
     if missing_script_markers:
         STATE.fail(f"sync-workflows.py 缺少关键同步能力: {', '.join(missing_script_markers)}")
     else:
-        STATE.ok("sync-workflows.py 已支持 manifest 拼接、Codex 去 frontmatter 和 README 排除")
+        STATE.ok("sync-workflows.py 已支持规则拼接、工作流伴随资源同步验证和 README 排除")
 
 
 def check_sync_targets_example() -> None:
@@ -448,6 +580,23 @@ def check_sync_targets_example() -> None:
 
 def check_generated_outputs() -> None:
     """检查已生成的同步产物是否暴露了关键维护规则。"""
+    try:
+        companion_result = subprocess.run(
+            [sys.executable, str(SYNC_SCRIPT), "--verify"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        STATE.fail(f"工作流伴随资源验证未完成: {error}")
+    else:
+        companion_output = (companion_result.stdout or companion_result.stderr).strip()
+        if companion_result.returncode != 0:
+            STATE.fail("工作流伴随资源跨平台验证失败: " + companion_output.replace("\n", " | "))
+        else:
+            STATE.ok("所有启用平台的 project-catalog.json 与源文件一致")
+
     codex_home = get_first_env_path(["SKY_RULES_CODEX_HOME", "CODEX_HOME"], HOME / ".codex")
     codex_skills_dir = get_codex_skills_dir(codex_home)
     codex_update_rules_skill = codex_skills_dir / "base-update-rules" / "SKILL.md"
@@ -510,6 +659,7 @@ def main() -> int:
     print()
 
     entries = load_manifest_entries()
+    check_project_catalog()
     if entries:
         check_rule_files_are_listed(entries)
         check_index_files(entries)
