@@ -31,6 +31,7 @@ alwaysApply: true
 | 前后端联调 / Mock 替换 | `base-debugging`、`静态接口开发规范`、`联调开发规范` |
 | 前端页面 / 组件 / 样式 / i18n / Icon | `rules/frontend/` 对应规则、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
 | 后端接口实现 / 数据库 / 鉴权 / 任务缓存 | `rules/backend/` 对应规则、`后端接口契约与服务分层规范`、`后端数据持久化与事务规范` |
+| 全栈开发 / 跨端测试 / 发布回滚 | `base-requirement-dev-closed-loop`、`全栈测试、迁移与发布规范`、`rules/backend/` 对应规则 |
 | 通用开发边界 / 需求读取 / Git / 终端验证 | `rules/common/` 对应规则、`禁止自行发散`、`代码生成后全局规范自检门禁` |
 | Kunlun 页面生成 | `kl-gen-page`、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
 | 菜单与权限管理 | `kl-menu-manage`、`Git 操作规范` |

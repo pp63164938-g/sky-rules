@@ -32,6 +32,11 @@
       "description": "静态接口、TODO 字段、联调开发、跨接口字段归属、临时代码标记"
     },
     {
+      "path": "common/60-testing-release.md",
+      "title": "全栈测试、迁移与发布",
+      "description": "前后端分层验证、契约测试、数据库迁移、兼容发布、回滚和交付验收"
+    },
+    {
       "path": "frontend/10-components-types.md",
       "title": "前端组件函数类型查证",
       "description": "组件 / 函数 / Hook 查证、公共能力复用、业务组件边界、TypeScript 类型处理"

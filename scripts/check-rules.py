@@ -42,6 +42,7 @@ REQUIRED_ASSEMBLED_MARKERS = [
     "## 跨接口字段归属规范",
     "# 后端接口契约与服务分层规范",
     "# 后端数据持久化与事务规范",
+    "# 全栈测试、迁移与发布规范",
     "**AI 规则 / Skills 同步验证规范**",
 ]
 
@@ -437,6 +438,11 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         STATE.ok("base.project-context.md 已覆盖一来源一条目、Git 和网页文档读取")
 
     required_requirement_closed_loop_markers = [
+        "当前开发范围：前端 / 后端 / 全栈",
+        "阶段 6：实现方案设计",
+        "数据模型与 Migration",
+        "测试策略",
+        "发布顺序与回滚方案",
         "AI 能力发散审计",
         "业务对象、生命周期、角色、范围和跨系统关系",
         "定位、聚合、关联、诊断、建议、执行、持续能力和组合任务",
@@ -452,11 +458,11 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     ]
     if missing_requirement_closed_loop_markers:
         STATE.fail(
-            "base.requirement-dev-closed-loop.md 缺少 AI 能力发散审计闭环: "
+            "base.requirement-dev-closed-loop.md 缺少全栈开发与 AI 能力发散审计闭环: "
             + ", ".join(missing_requirement_closed_loop_markers)
         )
     else:
-        STATE.ok("base.requirement-dev-closed-loop.md 已覆盖 AI 能力发散审计与验收闭环")
+        STATE.ok("base.requirement-dev-closed-loop.md 已覆盖全栈开发、AI 能力发散审计与验收闭环")
 
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -508,7 +514,7 @@ def check_assembled_rules(entries: list[dict[str, str]]) -> None:
     if missing_markers:
         STATE.fail(f"拼接后的全局规则缺少关键内容: {', '.join(missing_markers)}")
     else:
-        STATE.ok("拼接后的全局规则包含 P0、前端样式、联调、跨接口、后端和同步验证关键规则")
+        STATE.ok("拼接后的全局规则包含 P0、前端样式、联调、跨接口、后端、全栈测试发布和同步验证关键规则")
 
     codex_rules = assemble_rules(entries, strip_frontmatter=True).lstrip()
     if codex_rules.startswith("---"):
