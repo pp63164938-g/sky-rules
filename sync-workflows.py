@@ -42,6 +42,7 @@ PROJECT_CATALOG_FILE = ROOT / "project-catalog.json"
 PROJECT_CONTEXT_WORKFLOW_STEM = "base.project-context"
 SRC_SKILLS = ROOT / "skills"
 CONFIG_TARGET_FILES = [ROOT / "sync-targets.json", ROOT / "sync-targets.local.json"]
+LOCAL_CONFIG_FILE = HOME / ".sky-rules" / "local.json"
 CONFIG_WARNINGS: list[str] = []
 
 
@@ -57,6 +58,37 @@ def as_list(value: object) -> list[str]:
         return [str(item) for item in value if str(item)]
 
     return [str(value)]
+
+
+def update_local_source_config() -> None:
+    """记录本机 sky-rules 源仓库路径，并保留其他本地配置。"""
+    config: dict[str, object] = {}
+    if LOCAL_CONFIG_FILE.exists():
+        try:
+            loaded_config = json.loads(LOCAL_CONFIG_FILE.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError(f"本机配置读取失败，请修正或删除 {LOCAL_CONFIG_FILE}: {error}") from error
+
+        if not isinstance(loaded_config, dict):
+            raise ValueError(f"本机配置必须是 JSON 对象: {LOCAL_CONFIG_FILE}")
+
+        config = loaded_config
+
+    paths = config.get("paths")
+    if not isinstance(paths, dict):
+        paths = {}
+
+    paths["skyRulesRepo"] = str(ROOT)
+    config.setdefault("version", 1)
+    config["paths"] = paths
+
+    LOCAL_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    LOCAL_CONFIG_FILE.write_text(
+        json.dumps(config, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(f"[本机配置] OK sky-rules 源仓库: {LOCAL_CONFIG_FILE}")
 
 
 def resolve_path(value: str | Path, relative_base: Path = ROOT) -> Path:
@@ -1009,6 +1041,9 @@ def main() -> None:
         print()
     else:
         run_rules_check("同步前", source_only=True)
+
+    update_local_source_config()
+    print()
 
     if not no_git:
         git_commit_and_push()

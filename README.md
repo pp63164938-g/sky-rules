@@ -144,6 +144,7 @@ Codex 验证：AGENTS.md 已落盘，Skills 20 个，prompt-input 可见 base-de
 - 使用 Python `shutil` 处理文件复制，兼容中文路径
 - 仓库路径自适应：脚本根据自身所在目录定位源文件，可克隆到任意目录
 - 用户目录自适应：同步目标基于当前电脑的用户目录（`~` / `Path.home()`）
+- 本机源仓库定位：普通同步自动将仓库路径写入 `~/.sky-rules/local.json`，供后续规则维护直接定位且不提交到 Git
 - 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
 - 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
