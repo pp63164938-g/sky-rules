@@ -60,6 +60,49 @@ const businessTypeLabel = businessTypeOptions.find(businessTypeOption => busines
 - 当接口枚举值在静态开发或联调前存在 string / number 类型不确定时，比较前必须用显式类型归一表达，例如 `String(xxxValue) === TODO待联调_值_业务类型` 或 `Number(xxxValue) === XXX_CODE`；禁止用模板字符串 `` `${xxxValue}` === XXX_CODE `` 做隐式转字符串。模板字符串只用于文案拼接，不能用来伪装类型处理。
 - 类型已由接口文档、抓包或后端确认后，优先让字段类型和常量类型保持一致，直接同类型比较；不再保留无必要的 `String()` / `Number()` 包装。
 
+**联合类型、常量对象与 Options 的选择边界**：
+
+- **仅用于类型约束**：值本身语义清晰，且只用于限制字段、参数或组件 Props 的取值范围，不参与多处运行时业务判断时，直接使用联合类型。禁止为了形式统一机械创建常量对象。
+- **参与运行时业务判断**：值是难以直接理解的 code，或会被多个判断、配置点、文件共同使用时，使用带业务名称的常量对象作为唯一数据源，并从常量对象派生联合类型。禁止同时手写常量对象和内容重复的联合类型。
+- **同时用于下拉展示**：优先以 Options 作为唯一数据源，并从 Options 的 `value` 派生类型；禁止再维护一套内容重复的常量对象。
+- 判断重点不是“是否属于联合类型”，而是值是否容易理解、是否参与运行时逻辑、是否跨位置复用。
+- 规则正文负责说明选择联合类型、常量对象或 Options 的原因；代码注释只描述业务身份和值含义，禁止把“仅用于类型约束”“为了统一”等写法选择说明混进业务注释。
+
+仅用于类型约束：
+
+```ts
+/** 任务执行方式 */
+type XxxExecutionMode = 'manual' | 'automatic'
+```
+
+参与运行时业务判断：
+
+```ts
+/** 业务处理模式 */
+const XXX_PROCESS_MODE = {
+    /** 人工处理 */
+    MANUAL: '01',
+    /** 自动处理 */
+    AUTOMATIC: '02'
+} as const
+
+/** 业务处理模式取值 */
+type XxxProcessMode = (typeof XXX_PROCESS_MODE)[keyof typeof XXX_PROCESS_MODE]
+```
+
+同时用于下拉展示：
+
+```ts
+/** 业务状态选项 */
+const xxxStatusOptions = [
+    { label: '待处理', value: '01' },
+    { label: '已完成', value: '02' }
+] as const
+
+/** 业务状态取值 */
+type XxxStatus = (typeof xxxStatusOptions)[number]['value']
+```
+
 ```javascript
 // ❌ 禁止 - 用模板字符串隐藏类型归一意图
 const matched = `${row.type}` === TODO待联调_值_业务类型
