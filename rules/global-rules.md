@@ -31,13 +31,19 @@ alwaysApply: true
 | 前后端联调 / Mock 替换 | `base-debugging`、`静态接口开发规范`、`联调开发规范` |
 | 前端页面 / 组件 / 样式 / i18n / Icon | `rules/frontend/` 对应规则、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
 | 后端接口实现 / 数据库 / 鉴权 / 任务缓存 | `rules/backend/` 对应规则、`后端接口契约与服务分层规范`、`后端数据持久化与事务规范` |
-| 全栈开发 / 跨端测试 / 发布回滚 | `base-requirement-dev-closed-loop`、`全栈测试、迁移与发布规范`、`rules/backend/` 对应规则 |
+| 全栈开发 / 跨端测试 / 发布回滚 | `全栈测试、迁移与发布规范`、`rules/backend/` 对应规则 |
 | 通用开发边界 / 需求读取 / Git / 终端验证 | `rules/common/` 对应规则、`禁止自行发散`、`代码生成后全局规范自检门禁` |
 | Kunlun 页面生成 | `kl-gen-page`、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
 | 菜单与权限管理 | `kl-menu-manage`、`Git 操作规范` |
 | i18n 翻译 | `i18n 翻译规范`、`i18n 文件扩展规范（通用）` |
 | 样式 / UI 还原 | `CSS/SCSS 样式规范`、`UI 与设计图还原规范` |
 | 提交 / 推送 | `Git 操作规范`、`base-git-commit-message` |
+
+## 需求文档驱动开发闭环工作流显式触发
+
+`base-requirement-dev-closed-loop` 仅允许用户显式触发。只有用户通过 `$base-requirement-dev-closed-loop` 明确调用，或明确要求“使用 / 按该工作流执行”时，才使用本工作流。
+
+仅提供需求文档、PRD、工单、接口文档或设计说明，或任务内容与该工作流适用范围相似，均不构成触发条件。未显式触发时，按当前任务适用的通用规则和其他工作流执行，不进入该工作流的阶段流程，也不主动维护其进度看板。
 
 ## 项目上下文工作流主动触发
 
