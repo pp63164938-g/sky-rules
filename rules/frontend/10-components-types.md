@@ -31,6 +31,79 @@
 - 对于组件或函数已经内置的默认值、默认行为、自动校验、自动请求、自动清空、自动回填等能力，禁止重复声明同等配置。
 - 需求值与默认值一致时不传；需求值不同于默认值、或确实需要改变默认行为时，才显式传参，并确保该参数真实存在且语义正确。
 
+## Vue 双向绑定契约规范
+
+**核心原则**：Vue 组件存在标准 `v-model` 契约时，必须先判断当前项目是否支持 `defineModel`；已支持且契约可以等价表达时，优先使用 `defineModel`，禁止继续维护冗余的 `modelValue + update:modelValue + computed` 透明代理。
+
+**适用场景**：新增或调整 Vue 组件的 `v-model`、`defineProps`、`defineEmits`、双向绑定 computed，以及维护已有组件对外契约。
+
+**执行要求**：
+
+1. **先确认项目能力**：查看当前项目 Vue、`@vue/compiler-sfc`、构建插件版本和项目已有真实用法，确认 `defineModel` 是否可用；禁止仅凭个人经验判断支持情况。
+2. **透明代理优先收敛**：同时存在 `modelValue` prop、`update:modelValue` emit，且 computed getter 原样返回 prop、setter 原样触发更新事件时，必须改用 `defineModel`。
+3. **命名模型使用具名声明**：`v-model:xxx` 使用 `defineModel('xxx')`，禁止为每个命名模型重复建立 prop、emit 和 computed 代理。
+4. **保持原契约语义**：原模型为必传、具有默认值或存在可等价迁移的 get / set 转换时，必须在 `defineModel` 中保持相同的 required、default 和转换行为，禁止借收敛契约改变默认值、空值语义或更新时机。
+5. **只移除被接管的契约**：组件仍有其他 props / emits 时，只移除对应模型的 prop 和 update 事件，其他字段、事件和调用方式保持不变。
+6. **特殊代理先查等价性**：setter 存在业务校验、防抖、多事件触发、异步副作用或特殊更新时序时，必须先确认 `defineModel` 能否保持行为；无法等价时保留显式契约，并在代码附近说明当前业务原因。
+7. **旧写法不能证明必要性**：历史代码使用显式 prop / emit 代理，只能作为定位线索，不能作为“条件不足以使用 `defineModel`”的依据。
+
+```ts
+// ❌ 禁止 - 标准 v-model 重复维护透明代理
+const props = defineProps<{ modelValue: XxxItem[] }>()
+const emit = defineEmits<{ 'update:modelValue': [itemList: XxxItem[]] }>()
+const itemList = computed({
+    get: () => props.modelValue,
+    set: value => emit('update:modelValue', value)
+})
+
+// ✅ 正确 - 当前项目已支持 defineModel，保持原必传语义
+/** 业务条目列表 */
+const itemList = defineModel<XxxItem[]>({ required: true })
+```
+
+**交付前检查**：
+
+- 定向搜索本次修改的 Vue 文件中的 `modelValue`、`update:modelValue`、`defineModel` 和双向绑定 computed。
+- 发现透明代理时，必须先完成项目能力查证和契约收敛判断，禁止只补注释后直接交付。
+- 改用 `defineModel` 后，确认旧 prop、旧 update 事件、无用 computed 和无用导入均已清理，父组件原 `v-model` 调用保持不变。
+
+## Vue 组件契约注释规范
+
+**核心原则**：`defineModel`、props 和 emits 都属于组件对外契约，必须作为独立注释检查对象；禁止只检查业务函数、普通变量和复杂分支后，就宣告组件注释完整。
+
+**执行要求**：
+
+- `defineModel` 声明上方必须使用 JSDoc 说明双向绑定值的业务含义。
+- `defineProps` / `defineEmits` 声明上方必须使用 JSDoc 说明整组组件参数或事件的业务身份。
+- 内联类型中的每一个 prop 字段、每一个 emit 事件都必须使用 JSDoc 逐项说明业务含义；禁止只写总体注释后让内部契约裸露。
+- 使用外部 Props / Emits 类型时，每个字段或事件的注释放在类型定义处，调用处仍需保留整组业务说明。
+- 使用 `withDefaults(defineProps(...))`、运行时对象声明或 Options API `props` / `emits` 时，同样执行总体和逐项注释检查。
+- 新增、删除或调整 model、prop、emit 时，必须在同一批修改中同步更新对应注释，禁止等用户审查后再补。
+- 使用 `defineModel` 后，不再保留或注释它已经接管的虚拟 prop / update 事件；先完成契约选型，再检查最终保留契约的注释。
+
+```ts
+/** 业务配置组件参数 */
+const props = defineProps<{
+    /** 可选业务类型列表 */
+    typeOptions: CommonEnum
+}>()
+
+/** 业务配置列表 */
+const configList = defineModel<XxxConfig[]>({ required: true })
+
+/** 业务配置组件事件 */
+const emit = defineEmits<{
+    /** 新增业务配置 */
+    addConfig: []
+}>()
+```
+
+**注释一次性交付门禁**：
+
+- 修改 Vue 组件后，交付前必须定向搜索本次修改文件中的 `defineModel`、`defineProps`、`withDefaults(defineProps`、`defineEmits` 和 Options API `props` / `emits`。
+- 检查顺序必须是：组件契约选型 → 重复契约清理 → 声明总体注释 → 每个 model / prop / emit 的业务注释。
+- 任一契约缺少应有注释时不得交付；禁止等用户逐项指出后再补齐。
+
 ## 公共能力复用优先级规范
 
 **核心原则**：凡是具备跨页面、跨模块复用可能的基础能力，必须优先搜索并复用已引入的成熟公共库，其次复用项目公共能力，最后才允许局部实现；禁止在业务文件中临时手写一份语义相同的工具逻辑。
