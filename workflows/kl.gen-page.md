@@ -481,13 +481,36 @@ description: Kunlun 页面生成 (严格按照 dev-template 模板，绝对克�
 
      <!-- ✅ 正确：纯文本展示优先使用 sky-ellipsis-tooltip -->
      <sky-ellipsis-tooltip content-class="xxx-card__name" tooltip-class="max-w-240">
-         {{ row.TODO业务字段 || '-' }}
+         {{ formatEmptyValue(row.TODO业务字段) }}
      </sky-ellipsis-tooltip>
 
      <!-- ✅ 正确：多行摘要使用 line-clamp 控制高度 -->
      <sky-ellipsis-tooltip :line-clamp="2" content-class="xxx-card__desc" tooltip-class="max-w-360">
-         {{ row.TODO业务说明 || '-' }}
+         {{ formatEmptyValue(row.TODO业务说明) }}
      </sky-ellipsis-tooltip>
+     ```
+   - 🔴 **雷区 15 补充：空值判断与统一文本占位重复实现**
+     - ❌ 禁止在 Kunlun 业务页面重复声明 `formatText`、`formatEmptyText` 等局部空值占位函数。
+     - ❌ 禁止使用 `value || '-'` 处理展示空值；数字 `0`、布尔值 `false` 都可能是有效业务值。
+     - ❌ 新增或修改空值判断时，禁止优先使用 `isEmpty / isNotEmpty`，或手写 `null / undefined / 空字符串` 判断。
+     - ✅ **项目约定：** 从 `@/utils/utils-common` 导入 `formatEmptyValue`、`isBlank`、`isNotBlank`。
+     - ✅ 文本、表格自定义单元格、详情只读字段等纯展示内容需要空值占位时，统一使用 `formatEmptyValue(value)`。
+     - ✅ `formatEmptyValue` 将 `''`、`null`、`undefined` 显示为 `-`，数字 `0` 和布尔值 `false` 保持原值。
+     - ✅ 业务逻辑需要判断空值时，`isBlank / isNotBlank` 的使用优先级高于 `isEmpty / isNotEmpty`；前者遵循 Kunlun 项目统一空值语义，并提供 TypeScript 类型收窄。
+     - ✅ 判断“为空”使用 `isBlank(value)`；判断“有值”使用 `isNotBlank(value)`，禁止通过 `!isBlank(value)` 表达有值。
+     - ✅ `formatEmptyValue` 只负责纯文本展示，不用于表单初始化、查询参数、提交数据或业务分支判断。
+     - ✅ `sky-table-pagination` 普通文本列已有统一空值展示时，不重复增加格式化；只有 `formatterRender`、自定义列插槽、原生静态表格或其他纯文本展示由业务自行渲染时，才调用 `formatEmptyValue`。
+
+     ```ts
+     import { formatEmptyValue, isBlank, isNotBlank } from '@/utils/utils-common'
+
+     const displayValue = formatEmptyValue(value)
+
+     if (isBlank(value)) return
+
+     if (isNotBlank(value)) {
+         useValue(value)
+     }
      ```
    - 🔴 **雷区 15 补充：表格列渲染优先级与插槽入口**
      - ❌ 需要简单自定义单元格展示时，默认编写 `<template #col_xxx>`，导致模板堆积大量零散列插槽。
