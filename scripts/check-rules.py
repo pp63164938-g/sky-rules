@@ -45,6 +45,7 @@ REQUIRED_ASSEMBLED_MARKERS = [
     "# 后端数据持久化与事务规范",
     "# 全栈测试、迁移与发布规范",
     "**AI 规则 / Skills 同步验证规范**",
+    "## Element Plus Namespace 规范",
 ]
 
 

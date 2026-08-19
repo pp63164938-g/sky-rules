@@ -102,6 +102,11 @@
       "description": "终端命令执行、Vite 验证分级、AI 规则同步验证、错误处理与用户感知"
     },
     {
+      "path": "projects/skyline-kunlun-ui-main.md",
+      "title": "skyline-kunlun-ui-main 项目规则",
+      "description": "Kunlun Element Plus namespace 与运行时前缀规范"
+    },
+    {
       "path": "projects/buka-laaffic-ui-customer.md",
       "title": "buka-laaffic 项目规则",
       "description": "buka-laaffic-ui-customer 专用 i18n 与简繁体规则"
