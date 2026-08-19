@@ -18,6 +18,7 @@ sky-rules/
 │   └── projects/          # 项目专属规则
 ├── workflows/              # 工作流文件（所有编辑器共享）
 │   ├── README.md          # 工作流维护索引
+│   ├── references/        # 长工作流按场景读取的引用资源
 │   ├── base.*.md           # 基础工作流
 │   ├── kl.*.md             # Kunlun 项目专用工作流
 │   └── more-tool.*.md      # 工具类工作流
@@ -93,6 +94,7 @@ sky-rules/
 | `workflows/*.md` | `~/.codeium/windsurf/global_workflows/` | Windsurf 工作流 |
 | `workflows/*.md` | `~/.gemini/antigravity/global_workflows/` | Antigravity 工作流 |
 | `workflows/*.md` | `~/.codex/skills/` | Codex Skills |
+| `workflows/references/*.md` | 普通工作流目录或对应 Codex Skill 的 `references/` | 按 `<skill-name>--<topic>.md` 归属并按需读取的引用资源 |
 | `project-catalog.json` | 所有启用平台的 `base-project-context` 工作流或 Skill 同目录 | 项目上下文工作流伴随资源；内容必须与唯一源文件一致 |
 | `rules/rules-manifest.json` | `~/.gemini/GEMINI.md` | Antigravity 全局规则（按 manifest 拼接） |
 | `rules/rules-manifest.json` | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 全局规则（按 manifest 拼接） |
@@ -109,8 +111,10 @@ sky-rules/
 - `README.md`、`AGENTS.md`、`rules/README.md`、`workflows/base.update-rules.md` 是否能指向 manifest、自检入口和规则质量自审门禁
 - 按 manifest 拼接后的全局规则是否仍包含关键红线、联调、前端样式、跨接口字段、后端规则和同步验证规则
 - `sync-workflows.py` 是否仍支持 `assembled_rules`、`codex_rules` 和 `workflows/README.md` 排除
-- 所有启用平台的 `project-catalog.json` 是否存在，并与仓库根目录唯一源文件完全一致
+- `workflows/references/` 中的引用是否有唯一归属、被主工作流链接且不存在断链
+- 所有启用平台的 `project-catalog.json` 和工作流引用资源是否存在，并与源文件完全一致
 - 已生成的 Codex `base-update-rules` Skill 是否能看到规则拆分定位和自检入口
+- 已生成的 Codex `kl-gen-page` 是否使用精简主入口，并包含 5 个按需引用资源
 
 同步脚本默认自动执行闭环：
 
@@ -149,7 +153,7 @@ Codex 验证：AGENTS.md 已落盘，Skills 20 个，prompt-input 可见 base-de
 - 目标目录可配置：其他电脑的 Gemini / Windsurf / Codex 目录不一致时，可通过环境变量覆盖同步目标
 - 未使用工具自动跳过：未检测到 Windsurf / Antigravity / Codex / Agents 目录且未配置环境变量时，不会自动创建对应目录
 - 编辑器可扩展：新增其他编辑器时优先通过 `sync-targets.json` / `sync-targets.local.json` 配置目标，不改 Python 同步逻辑
-- 工作流资源包：`base-project-context` 与 `project-catalog.json` 不可拆分；所有工作流目标自动同步并校验伴随目录文件
+- 工作流资源包：`base-project-context` 与 `project-catalog.json` 不可拆分；`workflows/references/` 按 Skill 归属同步；所有启用目标自动校验缺失、过期和内容不一致
 - 全局规则拼接：通过 `rules/rules-manifest.json` 维护规则源文件顺序，拆分源文件后仍生成完整全局规则
 - 同步排除：目录同步支持 `exclude` 排除说明文件，内置工作流同步会排除 `workflows/README.md`
 - 内置自检：正常同步默认执行同步前 `--source-only` 自检和同步后全量自检，避免只靠 AI 手动记忆闭环步骤
@@ -251,7 +255,7 @@ python sync-workflows.py --no-git
 
 新增其他编辑器时，优先使用配置文件，不直接改 `sync-workflows.py`：
 
-当同步目标的 `source` 为 `workflows` 时，`mirror` 和 `agents_skills` 模式会自动同步 `base-project-context` 的伴随资源 `project-catalog.json`。新平台不需要额外维护目录文件目标；如果新增的工作流同步模式尚未实现伴随资源布局，体检、同步和 `--verify` 必须失败，禁止产生缺少目录文件的平台产物。
+当同步目标的 `source` 为 `workflows` 时，`mirror` 和 `agents_skills` 模式会自动同步 `base-project-context` 的 `project-catalog.json`，并按 `<skill-name>--<topic>.md` 归属同步 `workflows/references/`。新平台不需要额外维护伴随资源目标；如果新增的工作流同步模式尚未实现资源布局，体检、同步和 `--verify` 必须失败，禁止产生缺少引用或目录文件的平台产物。
 
 | 文件 | 用途 | 是否建议提交 |
 |------|------|--------------|

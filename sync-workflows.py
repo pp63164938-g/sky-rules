@@ -35,6 +35,8 @@ SKY_WORKFLOW_DESCRIPTION_MARKER = "Use when the user wants this Sky workflow:"
 SOURCE_WORKFLOW_EDIT_MARKER = "Edit the source workflow, then sync again."
 
 SRC_WORKFLOWS = ROOT / "workflows"
+WORKFLOW_REFERENCES_DIR_NAME = "references"
+WORKFLOW_REFERENCE_SEPARATOR = "--"
 SRC_RULES = ROOT / "rules"
 RULES_MANIFEST = SRC_RULES / "rules-manifest.json"
 CHECK_RULES_SCRIPT = ROOT / "scripts" / "check-rules.py"
@@ -452,6 +454,55 @@ def iter_sync_source_files(src: Path, pattern: str, exclude: object = None) -> l
     return [src_file for src_file in sorted(src.glob(pattern)) if src_file.name not in excluded_names]
 
 
+def get_workflow_reference_files(workflow_file: Path) -> list[Path]:
+    """获取当前工作流按命名约定绑定的引用资源。"""
+    reference_dir = workflow_file.parent / WORKFLOW_REFERENCES_DIR_NAME
+    if not reference_dir.exists():
+        return []
+
+    skill_name = slugify(workflow_file.stem)
+    reference_prefix = f"{skill_name}{WORKFLOW_REFERENCE_SEPARATOR}"
+    return sorted(reference_dir.glob(f"{reference_prefix}*.md"))
+
+
+def get_workflow_reference_groups(
+    item: dict[str, object],
+) -> list[tuple[str, list[Path], Path]]:
+    """按同步模式生成工作流引用资源的源文件组和目标目录。"""
+    src = item.get("src")
+    dst = item.get("dst")
+    if not isinstance(src, Path) or not src.is_dir() or not isinstance(dst, Path):
+        return []
+
+    pattern = str(item.get("pattern", "*.md"))
+    workflow_files = iter_sync_source_files(src, pattern, item.get("exclude"))
+    mode = str(item.get("mode", ""))
+
+    if mode == "mirror":
+        reference_files = [
+            reference_file
+            for workflow_file in workflow_files
+            for reference_file in get_workflow_reference_files(workflow_file)
+        ]
+        return [("工作流引用", reference_files, dst / WORKFLOW_REFERENCES_DIR_NAME)]
+
+    if mode == "agents_skills":
+        return [
+            (
+                slugify(workflow_file.stem),
+                get_workflow_reference_files(workflow_file),
+                dst / slugify(workflow_file.stem) / WORKFLOW_REFERENCES_DIR_NAME,
+            )
+            for workflow_file in workflow_files
+        ]
+
+    reference_dir = src / WORKFLOW_REFERENCES_DIR_NAME
+    if reference_dir.exists() and any(reference_dir.glob("*.md")):
+        raise ValueError(f"{item['name']}: 工作流同步模式 {mode} 尚未支持引用资源布局")
+
+    return []
+
+
 def is_same_file_content(left_file: Path, right_file: Path) -> bool:
     """判断两个文件内容是否一致，用于清理已排除的旧同步残留。"""
     try:
@@ -653,12 +704,17 @@ def diagnose_target(item: dict[str, object]) -> str:
 
     try:
         companion_target = get_workflow_companion_target(item)
+        reference_groups = get_workflow_reference_groups(item)
     except ValueError as error:
         print(f"    伴随资源: FAIL {error}")
         return "fail"
 
     if companion_target is not None:
-        print(f"    伴随资源: {companion_target}")
+        print(f"    项目目录资源: {companion_target}")
+
+    reference_targets = [target_dir for _, source_files, target_dir in reference_groups if source_files]
+    if reference_targets:
+        print(f"    引用资源目录: {', '.join(str(target_dir) for target_dir in reference_targets)}")
 
     if not should_sync_target(item, include_missing_targets=False):
         print(f"    检测: SKIP {get_skip_reason(item)}，默认同步会跳过")
@@ -735,6 +791,54 @@ def sync_file(name: str, src: Path, dst: Path) -> None:
 
     shutil.copy2(src, dst)
     print(f"  OK {name}: 已同步")
+
+
+def sync_workflow_reference_group(source_files: list[Path], target_dir: Path) -> tuple[int, int, int]:
+    """同步一组工作流引用资源，并清理该组过期的 Markdown 产物。"""
+    expected_names = {source_file.name for source_file in source_files}
+    copied = 0
+    skipped = 0
+
+    if source_files:
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+    for source_file in source_files:
+        target_file = target_dir / source_file.name
+        if target_file.exists() and is_same_file_content(source_file, target_file):
+            skipped += 1
+            continue
+
+        shutil.copy2(source_file, target_file)
+        copied += 1
+
+    removed = 0
+    if target_dir.exists():
+        for target_file in target_dir.glob("*.md"):
+            if target_file.name in expected_names:
+                continue
+            target_file.unlink()
+            removed += 1
+
+        if not any(target_dir.iterdir()):
+            target_dir.rmdir()
+
+    return copied, skipped, removed
+
+
+def sync_workflow_references(item: dict[str, object]) -> None:
+    """将工作流引用资源同步到普通工作流目录或对应 Codex Skill。"""
+    copied = 0
+    skipped = 0
+    removed = 0
+
+    for _, source_files, target_dir in get_workflow_reference_groups(item):
+        group_copied, group_skipped, group_removed = sync_workflow_reference_group(source_files, target_dir)
+        copied += group_copied
+        skipped += group_skipped
+        removed += group_removed
+
+    if copied or skipped or removed:
+        print(f"  OK {item['name']} 引用资源: 复制 {copied}, 跳过 {skipped}, 删除 {removed}")
 
 
 def sync_assembled_rules(name: str, src: Path, dst: Path, strip_frontmatter: bool = False) -> None:
@@ -847,16 +951,16 @@ def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str, exclude: o
 
 
 def sync_workflow_companion(item: dict[str, object]) -> None:
-    """同步与项目上下文工作流不可拆分的目录数据。"""
+    """同步项目目录和渐进式引用等工作流伴随资源。"""
     companion_target = get_workflow_companion_target(item)
-    if companion_target is None:
-        return
+    if companion_target is not None:
+        sync_file(
+            f"{item['name']} 项目目录资源",
+            PROJECT_CATALOG_FILE,
+            companion_target,
+        )
 
-    sync_file(
-        f"{item['name']} 伴随资源",
-        PROJECT_CATALOG_FILE,
-        companion_target,
-    )
+    sync_workflow_references(item)
 
 
 def sync_all(include_missing_targets: bool = False) -> None:
@@ -885,13 +989,14 @@ def sync_all(include_missing_targets: bool = False) -> None:
 
 
 def verify_workflow_companions(include_missing_targets: bool = False) -> bool:
-    """验证所有启用平台的项目目录伴随资源与源文件完全一致。"""
+    """验证所有启用平台的项目目录和工作流引用资源与源文件一致。"""
     print("[工作流伴随资源验证]")
     if not PROJECT_CATALOG_FILE.exists():
         print(f"  FAIL 源文件不存在: {PROJECT_CATALOG_FILE}")
         return False
 
-    checked_count = 0
+    checked_catalog_count = 0
+    checked_reference_count = 0
     failure_count = 0
     for item in SYNC_MAP:
         if not should_sync_target(item, include_missing_targets):
@@ -899,32 +1004,62 @@ def verify_workflow_companions(include_missing_targets: bool = False) -> bool:
 
         try:
             companion_target = get_workflow_companion_target(item)
+            reference_groups = get_workflow_reference_groups(item)
         except ValueError as error:
             print(f"  FAIL {error}")
             failure_count += 1
             continue
 
-        if companion_target is None:
-            continue
+        if companion_target is not None:
+            checked_catalog_count += 1
+            if not companion_target.exists():
+                print(f"  FAIL {item['name']}: 缺少 {companion_target}")
+                failure_count += 1
+            elif not is_same_file_content(PROJECT_CATALOG_FILE, companion_target):
+                print(f"  FAIL {item['name']}: 内容与源文件不一致 ({companion_target})")
+                failure_count += 1
+            else:
+                print(f"  OK {item['name']} 项目目录: {companion_target}")
 
-        checked_count += 1
-        if not companion_target.exists():
-            print(f"  FAIL {item['name']}: 缺少 {companion_target}")
-            failure_count += 1
-            continue
+        for group_name, source_files, target_dir in reference_groups:
+            expected_names = {source_file.name for source_file in source_files}
+            target_names = (
+                {target_file.name for target_file in target_dir.glob("*.md")}
+                if target_dir.exists()
+                else set()
+            )
+            missing_names = sorted(expected_names - target_names)
+            extra_names = sorted(target_names - expected_names)
 
-        if not is_same_file_content(PROJECT_CATALOG_FILE, companion_target):
-            print(f"  FAIL {item['name']}: 内容与源文件不一致 ({companion_target})")
-            failure_count += 1
-            continue
+            if missing_names:
+                print(f"  FAIL {item['name']} {group_name}: 缺少 {', '.join(missing_names)}")
+                failure_count += 1
+            if extra_names:
+                print(f"  FAIL {item['name']} {group_name}: 存在过期资源 {', '.join(extra_names)}")
+                failure_count += 1
 
-        print(f"  OK {item['name']}: {companion_target}")
+            mismatched_names = [
+                source_file.name
+                for source_file in source_files
+                if (target_dir / source_file.name).exists()
+                and not is_same_file_content(source_file, target_dir / source_file.name)
+            ]
+            if mismatched_names:
+                print(f"  FAIL {item['name']} {group_name}: 内容不一致 {', '.join(mismatched_names)}")
+                failure_count += 1
+
+            if source_files and not missing_names and not extra_names and not mismatched_names:
+                checked_reference_count += len(source_files)
+                print(f"  OK {item['name']} {group_name}: {len(source_files)} 个引用资源")
 
     if failure_count:
         print(f"  结论: FAIL，{failure_count} 个平台目标不一致")
         return False
 
-    print(f"  结论: OK，{checked_count} 个平台目标与源文件一致")
+    print(
+        "  结论: OK，"
+        f"{checked_catalog_count} 个项目目录目标、{checked_reference_count} 个引用资源目标与源文件一致"
+    )
     return True
 
 
@@ -973,7 +1108,15 @@ def print_sync_targets() -> None:
         print(f"  {item['name']}: {item['dst']}")
         companion_target = get_workflow_companion_target(item)
         if companion_target is not None:
-            print(f"    伴随资源: {companion_target}")
+            print(f"    项目目录资源: {companion_target}")
+
+        reference_targets = [
+            target_dir
+            for _, source_files, target_dir in get_workflow_reference_groups(item)
+            if source_files
+        ]
+        if reference_targets:
+            print(f"    引用资源目录: {', '.join(str(target_dir) for target_dir in reference_targets)}")
 
 
 def run_doctor() -> None:
@@ -996,6 +1139,10 @@ def run_doctor() -> None:
     if SRC_WORKFLOWS.exists():
         workflow_count = len(iter_sync_source_files(SRC_WORKFLOWS, "*.md", ["README.md"]))
         print(f"  OK 工作流目录: {SRC_WORKFLOWS} ({workflow_count} 个 .md)")
+
+        reference_dir = SRC_WORKFLOWS / WORKFLOW_REFERENCES_DIR_NAME
+        reference_count = len(list(reference_dir.glob("*.md"))) if reference_dir.exists() else 0
+        print(f"  OK 工作流引用资源: {reference_dir} ({reference_count} 个 .md)")
     else:
         workflow_count = 0
         print(f"  FAIL 工作流目录不存在: {SRC_WORKFLOWS}")

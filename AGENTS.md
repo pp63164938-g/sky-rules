@@ -19,7 +19,7 @@
 | 了解仓库用途、同步方式 | `README.md` |
 | 定位项目需求 / 接口文档 | `project-catalog.json`、`workflows/base.project-context.md` |
 | 新增 / 修改全局规则 | `rules/README.md`、`rules/rules-manifest.json`、目标规则文件 |
-| 新增 / 修改工作流 | `workflows/README.md`、目标 `workflows/*.md` |
+| 新增 / 修改工作流 | `workflows/README.md`、目标 `workflows/*.md` 及其 `workflows/references/` 引用 |
 | 扩展同步目标 | `README.md`、`sync-targets.example.json`、`sync-workflows.py` |
 | 规则结构自检 | `scripts/check-rules.py` |
 | 提交规则仓库变更 | `workflows/base.git-commit-message.md` |
@@ -39,6 +39,7 @@
 | `rules/projects/` | 项目专属规则，只放特定项目需要遵守的补充规则 |
 | `workflows/README.md` | 工作流维护索引，说明命名、归属、扩展标准 |
 | `workflows/*.md` | 各场景工作流源文件，会同步为 Windsurf / Antigravity 工作流和 Codex Skills |
+| `workflows/references/` | 长工作流按 `<skill-name>--<topic>.md` 拆分的场景引用，会同步到普通工作流或对应 Skill 的 `references/` |
 | `scripts/check-rules.py` | 规则仓库自检脚本，检查 manifest、索引、拼接结果和同步产物 |
 | `sync-workflows.py` | 同步脚本，负责把源规则和工作流同步到各 AI 工具 |
 
@@ -46,7 +47,7 @@
 
 1. 判断归属：前后端都适用的规则进 `rules/common/`；前端专属规则进 `rules/frontend/`；后端专属规则进 `rules/backend/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
-3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找目标文件，按主题插入，禁止追加到无关文件末尾。
+3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找目标文件，按主题插入，禁止追加到无关文件末尾；工作流接近 500 行、读取被截断或包含多个独立场景时，按 `workflows/README.md` 拆入按需引用。
 4. 规则质量自审：提炼稳定不变量和约束对象，检查未来绕过、合法场景误伤、事实失效、规则冲突和触发可见性；未通过时先重写。
 5. 预览确认：向用户展示拟新增内容、质量审计摘要、目标文件和目标章节，等待确认；用户预览不替代 AI 自审。
 6. 写入源文件：只改本仓库源文件，不改同步产物；新增规则文件时必须同步更新 `rules/rules-manifest.json` 和 `rules/README.md`。
@@ -77,6 +78,7 @@ python3 scripts/check-rules.py
 
 - 全局规则是否同步到 Codex `~/.codex/AGENTS.md`、Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`。
 - 工作流是否同步到 Windsurf / Antigravity 工作流目录。
+- `workflows/references/` 是否按归属同步到普通工作流目录和对应 Codex Skill。
 - Codex Skills 是否生成到 `~/.codex/skills/`。
 - Codex `prompt-input` 是否能看到代表性 Skills。
 - 同步脚本内置自检是否执行；`--skip-rules-check` 只能在排障时使用，正常规则变更禁止跳过。
