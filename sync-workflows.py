@@ -788,6 +788,11 @@ def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str, exclude: o
         metadata, body = split_frontmatter(text)
         description = metadata.get("description") or src_file.stem
         description = f"Use when the user wants this Sky workflow: {description}"
+        allow_implicit_invocation = metadata.get("allow_implicit_invocation", "true").lower()
+        if allow_implicit_invocation not in {"true", "false"}:
+            raise ValueError(
+                f"{src_file.name}: allow_implicit_invocation 只允许 true 或 false"
+            )
 
         skill_dir = dst / skill_name
         skill_dir.mkdir(parents=True, exist_ok=True)
@@ -803,6 +808,23 @@ def sync_agents_skills(name: str, src: Path, dst: Path, pattern: str, exclude: o
             encoding="utf-8",
             newline="\n",
         )
+
+        openai_config_file = skill_dir / "agents" / "openai.yaml"
+        if allow_implicit_invocation == "false":
+            openai_config_file.parent.mkdir(parents=True, exist_ok=True)
+            openai_config_file.write_text(
+                f"# {GENERATED_BY_MARKER}. Generated from {format_source_path(src_file)}.\n\n"
+                "policy:\n"
+                "  allow_implicit_invocation: false\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+        elif openai_config_file.exists():
+            openai_config_text = openai_config_file.read_text(encoding="utf-8", errors="replace")
+            if GENERATED_BY_MARKER in openai_config_text:
+                openai_config_file.unlink()
+                if not any(openai_config_file.parent.iterdir()):
+                    openai_config_file.parent.rmdir()
         copied += 1
 
     removed = 0

@@ -34,6 +34,7 @@
 ```md
 ---
 description: 工作流用途说明
+allow_implicit_invocation: false
 ---
 
 # 工作流名称
@@ -57,6 +58,8 @@ description: 工作流用途说明
 说明如何验证、如何向用户反馈。
 ```
 
+`allow_implicit_invocation` 为可选的 Codex Skill 调用策略；省略时默认允许按 `description` 自动匹配。设为 `false` 时，同步脚本会生成 `agents/openai.yaml`，该 Skill 仅允许用户通过 `$skill-name` 显式调用。显式调用工作流的 `description` 和正文仍须同步写清触发边界，避免其他平台误判。
+
 ## 工作流伴随资源
 
 工作流依赖的结构化数据必须作为伴随资源与工作流一起同步，禁止只同步工作流说明文件。`base.project-context.md` 与仓库根目录的 `project-catalog.json` 组成不可拆分的资源包：
@@ -69,6 +72,7 @@ description: 工作流用途说明
 ## 维护要求
 
 - 工作流应描述“怎么做”，全局规则应描述“必须 / 禁止什么”。
+- 仅允许用户显式调用的工作流必须设置 `allow_implicit_invocation: false`，并在触发说明中明确普通相似任务不构成触发条件。
 - 工作流中的规则如果具有跨场景通用性，应同步沉淀到 `rules/global-rules.md`。
 - 新增工作流后必须更新本文件的命名或索引说明。
 - 工作流中的示例必须抽象化，禁止复制真实业务接口、路径、权限标识和生产数据。

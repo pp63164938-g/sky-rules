@@ -27,6 +27,7 @@ WORKFLOWS_README_FILE = WORKFLOWS_DIR / "README.md"
 UPDATE_RULES_WORKFLOW = WORKFLOWS_DIR / "base.update-rules.md"
 PROJECT_CONTEXT_WORKFLOW = WORKFLOWS_DIR / "base.project-context.md"
 REQUIREMENT_DEV_CLOSED_LOOP_WORKFLOW = WORKFLOWS_DIR / "base.requirement-dev-closed-loop.md"
+PINGCODE_FIX_BUG_WORKFLOW = WORKFLOWS_DIR / "base.pingcode-fix-bug.md"
 SYNC_SCRIPT = ROOT / "sync-workflows.py"
 SYNC_TARGETS_EXAMPLE = ROOT / "sync-targets.example.json"
 
@@ -315,6 +316,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     update_rules_workflow = read_text(UPDATE_RULES_WORKFLOW)
     project_context_workflow = read_text(PROJECT_CONTEXT_WORKFLOW)
     requirement_dev_closed_loop_workflow = read_text(REQUIREMENT_DEV_CLOSED_LOOP_WORKFLOW)
+    pingcode_fix_bug_workflow = read_text(PINGCODE_FIX_BUG_WORKFLOW)
 
     missing_from_rules_readme = [
         entry["path"]
@@ -464,6 +466,24 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
     else:
         STATE.ok("base.requirement-dev-closed-loop.md 已覆盖全栈开发、AI 能力发散审计与验收闭环")
 
+    required_pingcode_fix_bug_markers = [
+        "allow_implicit_invocation: false",
+        "仅当用户显式调用 `$base-pingcode-fix-bug`",
+        "不构成触发条件",
+    ]
+    missing_pingcode_fix_bug_markers = [
+        marker
+        for marker in required_pingcode_fix_bug_markers
+        if marker not in pingcode_fix_bug_workflow
+    ]
+    if missing_pingcode_fix_bug_markers:
+        STATE.fail(
+            "base.pingcode-fix-bug.md 缺少仅显式调用约束: "
+            + ", ".join(missing_pingcode_fix_bug_markers)
+        )
+    else:
+        STATE.ok("base.pingcode-fix-bug.md 已限制为用户显式调用")
+
 
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
     """拆分 Markdown frontmatter，和同步脚本保持一致。"""
@@ -541,6 +561,8 @@ def check_sync_script() -> None:
         "--skip-rules-check",
         "--source-only",
         '"exclude": ["README.md"]',
+        "allow_implicit_invocation",
+        "openai.yaml",
     ]
     missing_script_markers = [
         marker
@@ -606,6 +628,7 @@ def check_generated_outputs() -> None:
     codex_home = get_first_env_path(["SKY_RULES_CODEX_HOME", "CODEX_HOME"], HOME / ".codex")
     codex_skills_dir = get_codex_skills_dir(codex_home)
     codex_update_rules_skill = codex_skills_dir / "base-update-rules" / "SKILL.md"
+    codex_pingcode_fix_bug_policy = codex_skills_dir / "base-pingcode-fix-bug" / "agents" / "openai.yaml"
     codex_readme_skill = codex_skills_dir / "readme" / "SKILL.md"
 
     if codex_update_rules_skill.exists():
@@ -627,6 +650,15 @@ def check_generated_outputs() -> None:
             STATE.ok("Codex base-update-rules Skill 已包含拆分定位、manifest 和自检入口")
     else:
         STATE.warn("未找到 Codex base-update-rules Skill；同步后会再次检查")
+
+    if codex_pingcode_fix_bug_policy.exists():
+        policy_text = read_text(codex_pingcode_fix_bug_policy)
+        if "allow_implicit_invocation: false" in policy_text:
+            STATE.ok("Codex base-pingcode-fix-bug Skill 已限制为仅显式调用")
+        else:
+            STATE.fail("Codex base-pingcode-fix-bug Skill 调用策略不是 allow_implicit_invocation: false")
+    else:
+        STATE.fail("未找到 Codex base-pingcode-fix-bug Skill 显式调用策略")
 
     if codex_readme_skill.exists():
         skill_text = read_text(codex_readme_skill)

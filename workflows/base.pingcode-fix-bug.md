@@ -1,10 +1,16 @@
 ---
-description: 根据截图修复代码 Bug（如 PingCode 工单截图）
+description: 仅当用户显式调用本工作流时，根据 PingCode 工单截图定位并修复代码 Bug
+allow_implicit_invocation: false
 ---
 
 # 修复 Bug 工作流
 
 适用场景：用户提供 PingCode 工单截图，根据截图中的信息定位并修复代码问题。
+
+## 0. 显式触发约束
+
+- 仅当用户显式调用 `$base-pingcode-fix-bug`，或明确要求“使用截图 Bug 修复工作流”时执行。
+- 用户仅提供页面截图、Bug 截图、工单截图，或要求修复页面、样式、代码问题，不构成触发条件；按当前任务适用的普通规则处理。
 
 ## 步骤
 
