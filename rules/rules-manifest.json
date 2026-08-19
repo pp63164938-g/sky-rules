@@ -9,7 +9,7 @@
     {
       "path": "common/10-workflow.md",
       "title": "通用开发工作流与需求读取",
-      "description": "开发前调研、需求文档读取、需求与接口优先级、Git 操作规范"
+      "description": "任务分级、生效规则告知、需求文档读取、需求与接口优先级、Git 操作规范"
     },
     {
       "path": "common/20-no-hallucination.md",

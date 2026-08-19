@@ -66,9 +66,10 @@ sky-rules/
 1. 判断归属：前后端都适用的规则放 `rules/common/`；前端专属规则放 `rules/frontend/`；后端专属规则放 `rules/backend/`；P0 红线和场景索引才放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标文件，禁止追加到无关文件末尾；新增规则文件或新工作流时更新对应 README 索引。
-4. 预览确认：AI 写入前必须先展示拟新增内容和插入位置，用户确认后再修改源文件。
-5. 自检验证：执行 `python3 scripts/check-rules.py`，确认 manifest、索引和拼接规则结构正确。
-6. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认拼接规则和 Skills 已同步到目标工具。
+4. 规则质量自审：AI 在预览前提炼不变量和约束对象，检查未来绕过、合法场景误伤、事实失效、规则冲突和触发可见性；未通过时先重写。
+5. 预览确认：AI 展示拟新增内容、质量审计摘要和插入位置，用户确认后再修改源文件；用户预览不替代 AI 自审。
+6. 自检验证：执行 `python3 scripts/check-rules.py`，确认 manifest、索引和拼接规则结构正确。
+7. 同步验证：执行 `python3 sync-workflows.py --no-git`，确认拼接规则和 Skills 已同步到目标工具。
 
 ## 使用方式
 
@@ -105,7 +106,7 @@ sky-rules/
 
 - `rules/rules-manifest.json` 是否结构正确、路径不重复、规则源文件存在
 - `rules/common/`、`rules/frontend/`、`rules/backend/`、`rules/projects/` 下的规则文件是否都进入 manifest
-- `README.md`、`AGENTS.md`、`rules/README.md`、`workflows/base.update-rules.md` 是否能指向 manifest 和自检入口
+- `README.md`、`AGENTS.md`、`rules/README.md`、`workflows/base.update-rules.md` 是否能指向 manifest、自检入口和规则质量自审门禁
 - 按 manifest 拼接后的全局规则是否仍包含关键红线、联调、前端样式、跨接口字段、后端规则和同步验证规则
 - `sync-workflows.py` 是否仍支持 `assembled_rules`、`codex_rules` 和 `workflows/README.md` 排除
 - 所有启用平台的 `project-catalog.json` 是否存在，并与仓库根目录唯一源文件完全一致

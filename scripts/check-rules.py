@@ -46,6 +46,7 @@ REQUIRED_ASSEMBLED_MARKERS = [
     "# 全栈测试、迁移与发布规范",
     "**AI 规则 / Skills 同步验证规范**",
     "## Element Plus Namespace 规范",
+    "## 生效规则显性告知门禁",
 ]
 
 
@@ -343,6 +344,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "闭环验收回执",
         "内置自检",
         "--skip-rules-check",
+        "规则质量自审",
     ]
     missing_root_readme_markers = [
         marker
@@ -385,6 +387,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "闭环验收回执",
         "内置自检",
         "--skip-rules-check",
+        "规则质量自审",
     ]
     missing_agents_markers = [
         marker
@@ -406,6 +409,9 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "闭环验收结果",
         "内置自检",
         "--skip-rules-check",
+        "规则抽象、演进与可见性自审门禁",
+        "规则质量不得依赖用户在预览中发现问题",
+        "未来扩展反向审计",
     ]
     missing_update_rules_markers = [
         marker
@@ -636,7 +642,14 @@ def check_generated_outputs() -> None:
         skill_text = read_text(codex_update_rules_skill)
         missing_skill_markers = [
             marker
-            for marker in ["全局规则拆分文件定位规范", "rules/rules-manifest.json", "scripts/check-rules.py", "闭环验收结果"]
+            for marker in [
+                "全局规则拆分文件定位规范",
+                "规则抽象、演进与可见性自审门禁",
+                "规则质量不得依赖用户在预览中发现问题",
+                "rules/rules-manifest.json",
+                "scripts/check-rules.py",
+                "闭环验收结果",
+            ]
             if marker not in skill_text
         ]
         if missing_skill_markers:
