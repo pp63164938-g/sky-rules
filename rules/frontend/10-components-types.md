@@ -226,7 +226,7 @@ if (isNotEmpty(xxxValue) && isNotEmpty(yyyValue)) {
 ```ts
 // ✅ 允许 - 公共能力语义不匹配时，局部实现必须说明差异
 // 当前字段数字 0 是有效值，已有公共判断会把 0 当空，因此这里保留局部判断。
-const blank = value == null || value === ''
+const blank = value === null || value === undefined || value === ''
 ```
 
 ```ts

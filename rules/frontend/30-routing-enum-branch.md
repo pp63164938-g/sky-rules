@@ -277,6 +277,37 @@ return null
 
 **目的**：减少嵌套层级，提高可读性，新增分支时只需在末尾 `return` 前插入新的 `if` 块。
 
+## 相等运算符选择规范
+
+**核心原则**：JavaScript / TypeScript 默认使用 `===` 和 `!==`。`==`、`!=` 只有在明确需要抽象相等语义时才允许使用，禁止用宽松比较掩盖类型不确定。
+
+- 类型已确认时，必须使用严格相等。
+- 只包含 `undefined` 时使用 `=== undefined` / `!== undefined`；只包含 `null` 时使用 `=== null` / `!== null`。
+- 同时包含 `null` 和 `undefined` 时，优先使用严格判断或项目已有 `isNil` / `isNotNil`。
+- 确实需要将 `null` 与 `undefined` 视为同一空值时，允许使用 `value == null` / `value != null`，但类型必须明确包含两者；意图不明显时需在附近说明依据。
+- 禁止因为接口值可能是字符串或数字，就使用 `==` 自动转换；应先确认契约，再显式归一类型并使用严格相等。
+- 如果宽松比较只是为了消除 TypeScript 报错，应修正源头类型或控制流收窄，不得用 `==` / `!=` 绕过。
+
+```ts
+// ✅ 类型只包含 undefined，使用严格判断
+if (xxxId !== undefined) {
+    handleXxx(xxxId)
+}
+
+// ✅ 同时处理 null 和 undefined，默认仍优先严格表达
+if (xxxValue === null || xxxValue === undefined) return
+
+// ✅ 允许 - 外部契约明确两种空值语义相同
+// 外部回调可能返回 null 或 undefined，二者都表示未提供值。
+if (externalValue == null) return
+```
+
+**判断标准**：
+
+- 当前比较是否能由变量类型或接口契约证明；不能证明时先确认类型，禁止用宽松比较试探运行时。
+- 宽松比较是否明确依赖 `null` / `undefined` 同义等抽象相等语义；没有该需求时改用严格相等。
+- string / number 等类型归一是否显式完成，避免 `0 == '0'` 这类隐式转换进入业务判断。
+
 **代码示例**：
 
 ```javascript
@@ -416,7 +447,7 @@ formData.value = {
 }
 
 // ✅ 正确 - 编辑回显必填枚举缺失时显式暴露问题，避免错误提交
-if (data.businessType == null) {
+if (data.businessType === null || data.businessType === undefined) {
     ElMessage.error('详情缺少类型，无法编辑')
     return
 }
