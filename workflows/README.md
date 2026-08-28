@@ -78,6 +78,7 @@ allow_implicit_invocation: false
 
 - `base.project-context.md` 与仓库根目录的 `project-catalog.json` 组成不可拆分的项目目录资源包；普通工作流目标放在工作流文件同目录，Skill 目标放在对应 `SKILL.md` 同目录。
 - `workflows/references/*.md` 是渐进式引用的唯一源文件；普通工作流目标同步到工作流目录的 `references/`，Codex 同步到对应 Skill 的 `references/`。
+- 工作流引用的仓库级校验器统一放在根目录 `scripts/`；主工作流写明通过仓库根目录定位，不在 Codex 同步产物中维护第二份源文件。部署到独立运行环境时可以复制脚本，但部署副本不得独立演进。
 - 新平台使用 `mirror` 或 `agents_skills` 工作流同步模式时自动获得对应资源，不按平台名称增加专用复制逻辑。
 - 同步时自动清理过期引用；`--verify` 必须检查缺失、额外和内容不一致。
 - 新增工作流同步模式时必须先定义两类伴随资源布局；未支持时体检、同步和一致性验证必须失败。
@@ -99,6 +100,7 @@ allow_implicit_invocation: false
 | 根据页面路径或项目说明识别项目目录和专属要求 | `base.project-context.md` |
 | 根据接口文档联调 | `base.debugging.md`、`base.docs.md` |
 | 用户显式指定后，根据需求文档推进前端、后端或全栈开发闭环 | `base.requirement-dev-closed-loop.md` |
+| 创建、扩展、修复或验收飞书 OpenClaw 机器人 | `base.openclaw-bot.md` |
 | 生成 Kunlun 页面 | `kl.gen-page.md` |
 | 管理 Kunlun 菜单权限 | `kl.menu-manage.md` |
 | 生成提交信息并提交 | `base.git-commit-message.md` |

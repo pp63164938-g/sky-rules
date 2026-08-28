@@ -353,6 +353,16 @@ def check_workflow_references() -> None:
             if not linked_name.startswith(f"{skill_name}{WORKFLOW_REFERENCE_SEPARATOR}"):
                 STATE.fail(f"主工作流跨归属引用资源: {workflow_file.name} -> {linked_name}")
 
+        linked_script_names = set(
+            re.findall(r"scripts/([a-z0-9][a-z0-9-]*\.py)", workflow_text)
+        )
+        for linked_script_name in sorted(linked_script_names):
+            linked_script = ROOT / "scripts" / linked_script_name
+            if not linked_script.exists():
+                STATE.fail(
+                    f"主工作流链接的仓库脚本不存在: {workflow_file.name} -> scripts/{linked_script_name}"
+                )
+
     kl_gen_page_text = read_text(KL_GEN_PAGE_WORKFLOW)
     kl_gen_page_reference_names = references_by_owner.get("kl-gen-page", set())
     missing_kl_references = sorted(KL_GEN_PAGE_REFERENCE_NAMES - kl_gen_page_reference_names)
