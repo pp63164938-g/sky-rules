@@ -9,7 +9,7 @@
 - **组件代码**：正常调用正式 API 函数，写法与联调后一致，无需任何改动
 - **API 调用边界**：API 函数是页面、组件和 Hook 获取数据的唯一入口；组件不得直接导入 Mock 数据或 Mock 工厂
 - **Mock 数据承载**：项目已有统一 Mock 基建时沿用现有结构；没有统一基建时，极小响应可以内联在 API 函数中，结构化或多记录数据放在同目录 `<api-file>.mock.ts`
-- **联调改动范围**：API 文件只保留带生命周期标记的 Mock import 和调用入口；联调时删除少量接线代码与独立 Mock 文件，正式函数签名、请求位置和组件调用链保持不变
+- **联调改动范围**：已确认契约的正式 request 保持可执行源码，不注释、不移动、不包进临时标记；Mock 调用作为其前置单行 return。联调时单个 API 只删除对应 Mock return 行即可恢复真实请求，当前范围全部切换后再统一删除空标记、Mock import 和独立 Mock 文件
 
 API 与 Mock 文件规范：
 
@@ -19,8 +19,10 @@ API 与 Mock 文件规范：
 - **复杂响应必须分离**：包含多条记录、嵌套结构、多场景详情或大量展示字段时，必须放入独立 Mock 文件；禁止仅为了少建文件继续把大块静态数据塞进 API 实现
 - **Mock 文件职责单一**：只承载响应数据、响应工厂及支撑已确认页面状态所需的最小场景取值；禁止复刻筛选、分页、排序、权限或正式业务判断
 - **生命周期完整可搜**：API 文件中的临时 import 和 Mock 调用分别使用 `// @mock-start 联调时删除...` 与 `// @mock-end` 标记；独立 Mock 文件使用文件级标记说明联调时删除整个文件
-- **正式请求保留原位**：在 API 函数中保留正式 request 的最终位置；契约未确认时继续使用 TODO 或被注释的请求占位，不得把正式请求移入 Mock 文件
-- **联调清理完整**：删除 API 文件中的 Mock 标记块、对应 import 和当前联调范围的独立 Mock 文件，再按接口文档启用或补全正式请求
+- **Mock 单行短路**：正式请求契约已确认且项目工具链允许时，Mock 调用必须作为正式 request 前的一行前置 return；禁止为了接入 Mock 注释、移动或重写正式 request，避免联调时产生大面积恢复 diff
+- **正式请求保持可执行**：Mock return 之后继续保留完整 request；联调时删除 Mock return 行即可恢复真实请求。契约未确认时继续使用 TODO 或被注释的请求占位，不得为了套用单行短路编造 request，也不得把正式请求移入 Mock 文件
+- **工具链边界**：项目已有统一 Mock 基建，或编译、Lint 明确禁止不可达代码时，使用项目已验证的 Mock 接入方式；仍禁止仅为接入 Mock 而注释已确认的正式请求。相关项目事实变化时，应更新对应项目规则或工作流，禁止在业务代码中静默兼容新旧方式
+- **联调清理完整**：单个 API 切换时删除对应 Mock return 行；当前范围全部切换后，统一删除空的 Mock 标记、对应 import 和独立 Mock 文件。契约尚未确认的入口继续按接口文档补全，不得用静态请求占位伪装联调完成
 
 ```ts
 /** xxx 接口 */
@@ -31,11 +33,15 @@ import { createXxxListMockResponse } from './xxx.mock'
 // @mock-end
 
 export function getXxxList(data: Omix) {
-    // @mock-start 联调时删除本块：列表静态响应
+    // @mock-start 联调时删除本行：列表静态响应
     return createXxxListMockResponse()
     // @mock-end
 
-    // 联调时按已确认契约启用正式 request。
+    return request<XxxListResponse>({
+        url: '/xxx/list',
+        method: 'POST',
+        data
+    })
 }
 ```
 
