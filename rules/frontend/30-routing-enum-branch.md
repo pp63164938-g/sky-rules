@@ -149,15 +149,18 @@ const STATUS_MAP = {
 const statusText = STATUS_MAP[status] || '未知'
 ```
 
-**多类型条件判断**：当多个类型共享相同逻辑时，使用常量集合 + `includes` 判断：
+**多类型条件判断**：当多个类型共享相同逻辑时，优先使用正向集合 + `includes` 判断；集合是否抽成常量，按复用范围和业务稳定性决定：
 
 ```javascript
 // ❌ 禁止 - 硬编码单值判断，新增类型时容易遗漏
-v-if="rule.productType === 1"
+v-if="rule.type === TYPE_A"
 
-// ✅ 推荐 - 提取常量集合，新增类型只需修改一处
-const SMS_VOICE_PRODUCT_TYPES = [1, 3, 4]
-v-if="SMS_VOICE_PRODUCT_TYPES.includes(rule.productType)"
+// ✅ 推荐 - 单次局部判断直接使用正向集合
+v-if="[TYPE_A, TYPE_B].includes(rule.type)"
+
+// ✅ 推荐 - 多处复用或稳定业务集合抽成常量
+const TARGET_TYPES = [TYPE_A, TYPE_B]
+v-if="TARGET_TYPES.includes(rule.type)"
 ```
 
 **三元表达式使用限制**：
@@ -187,7 +190,7 @@ const result = interfaceFlag === 'YES' ? enabledResult : disabledResult
 - **有下拉 Options 的枚举展示**：禁止重复维护 Map/Object，必须优先复用 `getListOptionLabel(value, xxxOptions)` 或 `xxxOptions.find(...)`
 - **无下拉 Options 的枚举展示**：禁止使用三元运算符，必须使用映射对象（Map/Object）统一维护
 - **多状态判断**：禁止使用三元运算符，必须使用映射对象或明确分支
-- **多类型共享逻辑**：禁止硬编码单值判断，必须提取常量集合 + `includes`
+- **多类型共享逻辑**：优先使用正向集合 + `includes`；多处复用或属于稳定业务协议时抽成常量，单次局部判断可直接内联集合。
 - **固定纯二元场景**：明确、必然且永久只有两种互斥结果时，允许使用三元表达式
 - **可能扩展**：只要可能增加第三种结果，禁止使用三元表达式
 - **无法确定**：无法证明永久只有两种结果时，一律禁止使用三元表达式
@@ -351,7 +354,7 @@ function getFilteredItems(type, items) {
 - 正向判断不是只针对字段名像 `status` / `type` 的变量。只要条件表达的是“命中某个明确业务场景 / 业务分支 / 业务能力 / 业务来源”，无论字段名是 `source`、`mode`、`flag`、`code`、`key`、`bringType` 还是其他业务字段，都必须优先正向判断命中的明确值；禁止用 `!==`、`!isXxx` 或“非目标值”把未枚举的其他业务场景静默吞掉。
 - 只有业务本身明确是“排除某类后的全部剩余情况”，或需求 / 接口文档明确写明“除 X 外均按 Y 处理”时，才允许使用取反判断；代码附近必须写明依据和影响范围。
 - 枚举值未确认时，禁止通过反向判断绕过缺失枚举；必须先确认真实 value，或用 `TODO待联调_值_用途描述` 标记后再做正向判断。
-- 多个明确类型共享同一逻辑时，优先使用有业务语义的常量集合表达命中范围；后续新增枚举时只扩展集合，禁止让新增枚举自动落入旧的取反逻辑。
+- 多个明确类型共享同一逻辑时，优先使用正向集合表达命中范围；多处复用或属于稳定业务协议时抽成有业务语义的常量集合，单次局部判断可直接内联集合。后续新增枚举时只扩展集合，禁止让新增枚举自动落入旧的取反逻辑。
 
 ```javascript
 // ❌ 禁止 - 用“非 C”偷懒覆盖 A/B，未来新增 D 会误入旧逻辑
