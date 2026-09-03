@@ -149,11 +149,14 @@ const STATUS_MAP = {
 const statusText = STATUS_MAP[status] || '未知'
 ```
 
-**多类型条件判断**：当多个类型共享相同逻辑时，优先使用正向集合 + `includes` 判断；集合是否抽成常量，按复用范围和业务稳定性决定：
+**多类型条件判断**：当两个及以上类型共享相同逻辑时，必须使用正向集合判断，禁止展开成 `x === A || x === B`。集合是否抽成常量，按复用范围和业务稳定性决定：
 
 ```javascript
 // ❌ 禁止 - 硬编码单值判断，新增类型时容易遗漏
 v-if="rule.type === TYPE_A"
+
+// ❌ 禁止 - 多个命中值展开成或判断，新增类型时容易漏改
+v-if="rule.type === TYPE_A || rule.type === TYPE_B"
 
 // ✅ 推荐 - 单次局部判断直接使用正向集合
 v-if="[TYPE_A, TYPE_B].includes(rule.type)"
@@ -162,6 +165,8 @@ v-if="[TYPE_A, TYPE_B].includes(rule.type)"
 const TARGET_TYPES = [TYPE_A, TYPE_B]
 v-if="TARGET_TYPES.includes(rule.type)"
 ```
+
+`includes` 因 `undefined` 或联合类型报错时，使用 `.some(item => item === value)` 保持正向集合，禁止为了迁就类型先写 `value !== undefined && includes(value)`。
 
 **三元表达式使用限制**：
 
@@ -190,7 +195,7 @@ const result = interfaceFlag === 'YES' ? enabledResult : disabledResult
 - **有下拉 Options 的枚举展示**：禁止重复维护 Map/Object，必须优先复用 `getListOptionLabel(value, xxxOptions)` 或 `xxxOptions.find(...)`
 - **无下拉 Options 的枚举展示**：禁止使用三元运算符，必须使用映射对象（Map/Object）统一维护
 - **多状态判断**：禁止使用三元运算符，必须使用映射对象或明确分支
-- **多类型共享逻辑**：优先使用正向集合 + `includes`；多处复用或属于稳定业务协议时抽成常量，单次局部判断可直接内联集合。
+- **多类型共享逻辑**：两个及以上值共用同一结果时，必须使用正向集合 + `includes` / `some`；禁止 `===` 展开。多处复用或属于稳定业务协议时抽成常量，单次局部判断可直接内联集合。
 - **固定纯二元场景**：明确、必然且永久只有两种互斥结果时，允许使用三元表达式
 - **可能扩展**：只要可能增加第三种结果，禁止使用三元表达式
 - **无法确定**：无法证明永久只有两种结果时，一律禁止使用三元表达式
@@ -350,7 +355,7 @@ function getFilteredItems(type, items) {
 
 **正向精准判断优先**：
 
-- 当业务规则命中的是某几个明确枚举值 / 状态值时，必须正向列出这些值，例如 `A || B` 或常量集合 `includes(A, B)`；禁止用 `value !== X`、`!isXxx`、“非 A” 等取反方式，把剩余值偷懒归为同一业务场景。
+- 当业务规则命中的是某几个明确枚举值 / 状态值时，必须用正向集合列出这些值，例如 `[A, B].includes(value)`；禁止写成 `value === A || value === B`，也禁止用 `value !== X`、`!isXxx`、“非 A” 等取反方式，把剩余值偷懒归为同一业务场景。
 - 正向判断不是只针对字段名像 `status` / `type` 的变量。只要条件表达的是“命中某个明确业务场景 / 业务分支 / 业务能力 / 业务来源”，无论字段名是 `source`、`mode`、`flag`、`code`、`key`、`bringType` 还是其他业务字段，都必须优先正向判断命中的明确值；禁止用 `!==`、`!isXxx` 或“非目标值”把未枚举的其他业务场景静默吞掉。
 - 只有业务本身明确是“排除某类后的全部剩余情况”，或需求 / 接口文档明确写明“除 X 外均按 Y 处理”时，才允许使用取反判断；代码附近必须写明依据和影响范围。
 - 枚举值未确认时，禁止通过反向判断绕过缺失枚举；必须先确认真实 value，或用 `TODO待联调_值_用途描述` 标记后再做正向判断。
