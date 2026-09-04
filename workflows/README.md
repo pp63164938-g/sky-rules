@@ -108,7 +108,7 @@ allow_implicit_invocation: false
 | 管理 Kunlun 菜单权限 | `kl.menu-manage.md` |
 | 生成提交信息并提交 | `base.git-commit-message.md` |
 | i18n 翻译处理 | `base.i18n.md` |
-| 参考 Claude Code 供应商生成、切换或排查 CC Switch Codex 供应商 | `tool.ccswitch.md` |
+| 生成、切换、定位、修复、验证或复盘 CC Switch Codex 供应商问题 | `tool.ccswitch.md` |
 
 ## 维护自检
 
