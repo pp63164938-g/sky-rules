@@ -45,7 +45,7 @@
 
 ## 新增规则流程
 
-1. 判断归属：前后端都适用的规则进 `rules/common/`；前端专属规则进 `rules/frontend/`；后端专属规则进 `rules/backend/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；项目专属规则留在对应项目。
+1. 判断归属：前后端都适用的规则进 `rules/common/`；前端专属规则进 `rules/frontend/`；后端专属规则进 `rules/backend/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；跨项目工具配置、接入和排障流程进 `workflows/tool.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；`workflows/more-tool.*.md` 只保留给 More-Tool 项目；其他项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找目标文件，按主题插入，禁止追加到无关文件末尾；工作流接近 500 行、读取被截断或包含多个独立场景时，按 `workflows/README.md` 拆入按需引用。
 4. 规则质量自审：提炼稳定不变量和约束对象，检查未来绕过、合法场景误伤、事实失效、规则冲突和触发可见性；未通过时先重写。

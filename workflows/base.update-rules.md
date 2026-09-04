@@ -74,10 +74,14 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 如果用户指定了具体的规则文件或工作流，则更新用户指定的文件。
 
+工作流前缀按稳定归属选择：跨项目通用流程使用 `base.*.md`，可跨项目复用的工具配置、接入和排障流程使用 `tool.*.md`，Kunlun 专属流程使用 `kl.*.md`；`more-tool.*.md` 只保留给 More-Tool 项目，不作为通用工具前缀。
+
 | 类型 | sky-rules 仓库中的源文件 | 同步目标 | 判断标准 |
 |------|---------------------------|---------|--------|
 | 全局规则（默认） | `rules/rules-manifest.json` 拼接的 `rules/global-rules.md`、`rules/common/*.md`、`rules/frontend/*.md`、`rules/backend/*.md`、`rules/projects/*.md` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 按通用 / 前端 / 后端 / 项目专属分类维护 |
 | 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Codex Skills: `~/.codex/skills/*` | 跨项目通用的工作流程 |
+| 工具工作流 | `workflows/tool.*.md` | 同上 | 可跨项目复用的工具配置、接入和排障流程 |
+| More-Tool 项目工作流 | `workflows/more-tool.*.md` | 同上 | 仅服务 More-Tool 项目，不作为通用工具命名 |
 | 项目规则 | 项目根目录 `GEMINI.md` | 不经过 `sync-workflows.py` | 与特定项目相关 |
 | 项目工作流 | 项目根目录 `.agents/workflows/*.md` | 不经过 `sync-workflows.py` | 项目特有 |
 

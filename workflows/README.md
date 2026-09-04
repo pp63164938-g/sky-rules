@@ -8,9 +8,12 @@
 | --- | --- | --- |
 | `base.*.md` | 跨项目通用工作流 | `base.docs.md`、`base.update-rules.md` |
 | `kl.*.md` | Kunlun 项目专属工作流 | `kl.gen-page.md`、`kl.menu-manage.md` |
-| `more-tool.*.md` | 特定工具或私有工具链工作流 | `more-tool.commit-and-sync-skill.md` |
+| `tool.*.md` | 可跨项目复用的工具配置、接入和排障工作流 | `tool.ccswitch.md` |
+| `more-tool.*.md` | More-Tool 项目专属工作流或指针 | `more-tool.commit-and-sync-skill.md` |
 
 同步到 Codex Skills 时，文件名中的 `.` 会转换为 `-`，例如 `base.update-rules.md` 对应 `base-update-rules`。
+
+一般工具工作流统一使用 `tool.*.md`；`more-tool.*.md` 只表示现有 More-Tool 项目归属，不作为“更多工具”的通用前缀，也不要求批量重命名已有文件。
 
 ## 新增还是补充
 
@@ -105,6 +108,7 @@ allow_implicit_invocation: false
 | 管理 Kunlun 菜单权限 | `kl.menu-manage.md` |
 | 生成提交信息并提交 | `base.git-commit-message.md` |
 | i18n 翻译处理 | `base.i18n.md` |
+| 参考 Claude Code 供应商生成、切换或排查 CC Switch Codex 供应商 | `tool.ccswitch.md` |
 
 ## 维护自检
 

@@ -21,7 +21,8 @@ sky-rules/
 │   ├── references/        # 长工作流按场景读取的引用资源
 │   ├── base.*.md           # 基础工作流
 │   ├── kl.*.md             # Kunlun 项目专用工作流
-│   └── more-tool.*.md      # 工具类工作流
+│   ├── tool.*.md           # 跨项目复用的工具配置、接入和排障工作流
+│   └── more-tool.*.md      # More-Tool 项目专属工作流或指针
 ├── scripts/                # 仓库维护脚本
 │   └── check-rules.py      # 规则结构、索引和同步产物自检
 ├── sync-workflows.py       # 同步脚本（核心逻辑）
@@ -64,7 +65,7 @@ sky-rules/
 
 新增规则或工作流时遵循以下顺序：
 
-1. 判断归属：前后端都适用的规则放 `rules/common/`；前端专属规则放 `rules/frontend/`；后端专属规则放 `rules/backend/`；P0 红线和场景索引才放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；项目专属规则留在对应项目。
+1. 判断归属：前后端都适用的规则放 `rules/common/`；前端专属规则放 `rules/frontend/`；后端专属规则放 `rules/backend/`；P0 红线和场景索引才放 `rules/global-rules.md`；通用流程放 `workflows/base.*.md`；跨项目工具配置、接入和排障流程放 `workflows/tool.*.md`；Kunlun 专属流程放 `workflows/kl.*.md`；`workflows/more-tool.*.md` 只保留给 More-Tool 项目；其他项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标文件，禁止追加到无关文件末尾；新增规则文件或新工作流时更新对应 README 索引。
 4. 规则质量自审：AI 在预览前提炼不变量和约束对象，检查未来绕过、合法场景误伤、事实失效、规则冲突和触发可见性；未通过时先重写。
