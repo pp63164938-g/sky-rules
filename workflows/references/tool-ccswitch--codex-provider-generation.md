@@ -9,7 +9,7 @@
 - [3. 协议选择](#3-协议选择)
 - [4. 字段生成规则](#4-字段生成规则)
 - [5. 最小配置草案](#5-最小配置草案)
-- [6. CC Switch 表单实施顺序](#6-cc-switch-表单实施顺序)
+- [6. CC Switch 供应商新增与编辑](#6-cc-switch-供应商新增与编辑)
 - [7. 生成结果验证表](#7-生成结果验证表)
 
 ## 1. 当前实现事实与失效信号
@@ -51,7 +51,7 @@
 
 ## 3. 协议选择
 
-先确定真实上游协议，再填写 Codex 表单。
+先确定真实上游协议，再写入 Codex 供应商记录。
 
 | 上游格式 | CC Switch `meta.apiFormat` | Codex 外层 `wire_api` | 是否需要本地路由 | 活动配置的 Base URL |
 | --- | --- | --- | --- | --- |
@@ -65,6 +65,7 @@
 - 只有 `/chat/completions` 或明确写 OpenAI Chat 兼容时，选择 `openai_chat`，由本地路由转换。
 - 只有 `/v1/messages` 或明确写 Anthropic Messages 时，选择 `anthropic`。直接把该上游地址交给 Codex 会请求 `/responses` 并产生 404。
 - 来源 Claude provider 的 `meta.apiFormat` 是强线索，但旧数据可能缺失或被用户改动；最终以当前上游契约和真实请求为准。
+- 不得仅因来源 Claude 的 `meta.apiFormat` 选择 Codex 上游格式。同一 Base URL 已实测存在可用的 `/responses` 时，应优先按实测选择 `openai_responses`。
 - 路由模式下，CC Switch 供应商记录保存真实上游地址；切换生成的活动 `config.toml` 指向本机路由。两者不同是正常设计，不得把本机路由地址反写成上游地址。
 
 ## 4. 字段生成规则
@@ -72,13 +73,13 @@
 ### 4.1 供应商名称和 ID
 
 - 名称由用户确认，建议能区分来源服务和应用类型，但不要自行添加会误导协议或计费归属的名称。
-- provider ID 使用 CC Switch 生成或经当前版本校验的 ID。禁止手工占用 Codex 内置、保留或当前配置中已有的 provider ID。
+- provider ID 使用 CC Switch 生成或经当前版本校验的 ID。直接新增时按当前版本自定义 Codex 记录的 ID 形态生成新 ID；当前 3.20.1 使用 UUID。禁止占用空名残留卡、内置 ID 或其他 provider 的现成 ID，除非用户明确要求复用。
 - 同名 Claude 和 Codex 记录必须继续按应用类型分开，不得把 Claude 记录直接改成 Codex 记录。
 
 ### 4.2 Base URL
 
 - 默认从来源 Claude provider 的已验证上游地址迁移，但必须先确认路径语义。
-- 服务根地址或 `/v1` 根地址按 CC Switch 当前表单规则填写。
+- 服务根地址或 `/v1` 根地址按 CC Switch 当前供应商字段规则填写。
 - 来源是完整 `/v1/messages`、`/chat/completions` 等接口 URL 时，只有当前版本支持且已启用“完整 URL”模式才原样迁移。
 - 禁止为了让错误消失而在末尾轮流拼接 `/v1`、`/responses`、`/chat/completions` 或 `/messages`。每次路径变化必须有文档、表单语义或路由日志依据。
 
@@ -86,13 +87,16 @@
 
 - 来源存在 `ANTHROPIC_AUTH_TOKEN` 时，Anthropic 路由通常对应 `Authorization: Bearer`；来源存在 `ANTHROPIC_API_KEY` 时，通常对应 `x-api-key`。仍须以当前 provider 或网关文档为准。
 - 两个来源字段同时存在时，先确认 Claude 当前实际使用哪个字段，禁止按变量名优先级自行选一个。
-- API Key 只填入 CC Switch 密钥输入框，不写入工作流输出、TOML 预览或 Git 文件。
+- API Key 只写入持久化供应商凭据字段，不写入工作流输出、TOML 预览或 Git 文件。
 - 当前 CC Switch v3.20.1 的直接第三方切换会把 Key 注入活动 provider 表的 `experimental_bearer_token`，不再依赖 `auth.json` 传递第三方 Key；路由接管则由本地路由向上游注入。只读检查时必须把该字段值脱敏。
 
 ### 4.4 默认模型与模型目录
 
 - `model` 只使用已确认能被上游调用的精确 ID；展示名称不能替代模型 ID。
 - Claude 的 Opus / Sonnet / Haiku 角色模型只能作为目录候选，不自动等同于 Codex 的默认模型。
+- 用户明确指定默认模型时，按用户指定写入；用户只给出口语名或简写时，先对照目标上游模型列表解析成真实 ID，并在结果中说明解析。
+- 用户未指定默认模型时，使用本次推荐值：优先用来源供应商已验证且目标上游存在的主模型；否则留空并在结果中标明待确认。推荐值必须写入结果，不得静默改口。
+- 不同上游的同名口语模型可能对应不同精确 ID。必须以目标上游模型列表为准，禁止把另一张供应商卡或另一上游的 model 字符串原样搬过来。
 - 模型目录可包含多个已确认模型，供 Codex 模型选择器使用；未配置目录不影响默认模型直接调用，但模型可能不会出现在列表中。
 - 上下文窗口、最大窗口、推理档、最大输出、输入模态和工具能力必须逐模型有依据。没有依据时留空，禁止复制另一个模型或按家族名称推断。
 - 不要把同一个模型分别伪装成多个能力不同的条目来迁就 UI；模型能力应来自真实上游。
@@ -139,23 +143,52 @@ API Key：已配置，不展示
 
 注意：Chat / Anthropic 路由启用后，活动 `config.toml` 的 `base_url` 应由 CC Switch 改成当前本地路由地址；上面的上游地址仍保存在 CC Switch provider 中供路由转发。
 
-## 6. CC Switch 表单实施顺序
+## 6. CC Switch 供应商新增与编辑
 
-1. 打开 CC Switch 的 Codex 页签，新增自定义供应商；修复现有记录时进入该 Codex 记录的编辑表单。
-2. 填写用户确认的名称、来源上游 Base URL、真实 API Key 和默认模型。
-3. 展开高级选项，选择已确认的上游格式。保存后只读确认 `meta.apiFormat` 与选择一致。
-4. Anthropic 上游按来源 provider 或网关文档选择 `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` 对应认证字段。
-5. “模拟 Claude Code 客户端”默认关闭；只有上游明确限制客户端且用户同意时才开启。开启后仍被拒说明限制可能在服务端，不继续堆伪装头。
-6. “最大输出 tokens”只在 Anthropic 路由且模型真实上限已确认时填写；不确认时保留默认并将截断验证列为待测。
-7. 模型映射只加入已确认模型；逐项填写真实能力，不复制来源 Claude provider 中未验证的角色模型能力。
-8. Chat / Anthropic 上游开启本地路由总开关和 Codex 接管。记录当前实际监听地址，不把默认端口当成永久事实。
-9. 保存后退出编辑表单再重新打开，确认名称、协议、Base URL、默认模型和凭据存在性没有串到其他 provider。
+目标是把已确认草案落到 CC Switch 的 Codex 供应商记录。表单 GUI、桌面控制和活动 `config.toml` 都不是源配置。
+
+### 6.1 路径选择
+
+1. 用户要求参考某个已有供应商、同步到 Codex、新增或修改对应供应商时，默认直接新增或定点编辑持久化记录。
+2. 不要求用户先建空卡；桌面控制表单只在 GUI 可用且用户明确要求时作为备选。
+3. 禁止把活动 `config.toml` 写成新供应商；下次切换会覆盖。
+4. 禁止占用空名残留卡或其他 provider 的现成行，除非用户明确要求复用该 ID。
+5. 官方导入链接若需要把 API Key 放进命令行参数，则不得使用。
+6. 来源协议、上游地址和模型 ID 已有当前证据时，禁止再做一轮全量探测；只在协议未知或请求的模型 ID 与上游列表冲突时补最小核对。
+
+### 6.2 新增
+
+1. 先备份当前 CC Switch 数据库到应用 backups 目录。
+2. 只读确认来源供应商，以及目标 Codex 名称尚未占用。
+3. 按当前版本 schema 插入新的 Codex 行：新 ID、`app_type=codex`、已确认名称 / Base URL / 最小 TOML / 凭据字段 / `meta.apiFormat`。当前 3.20.1 自定义 Codex 记录使用 UUID。
+4. `is_current` 保持 0，除非用户明确要求切换。
+5. 只写入最小 Codex TOML 和必要 meta；禁止复制当前启用供应商的 projects、MCP、plugins、personality、sandbox 快照。
+6. 凭据从已确认来源字段复制到 Codex `OPENAI_API_KEY`，只记录存在性、长度或脱敏摘要。
+
+### 6.3 编辑
+
+1. 先备份，再按 `app_type` 与 provider ID 定位目标行；名称只作核对，不能单独当作唯一键。
+2. 只更新用户要求的字段，例如默认模型、Base URL、协议或凭据。
+3. 未要求切换时不得改 `is_current`，也不得重写活动 `config.toml`。
+4. 目标行若正在启用，必须说明活动配置要等重新启用或完全重启后才会变化。
+
+### 6.4 字段与复查
+
+1. Anthropic 上游按来源 provider 或网关文档选择 `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` 对应认证字段。
+2. “模拟 Claude Code 客户端”默认关闭；只有上游明确限制客户端且用户同意时才开启。开启后仍被拒说明限制可能在服务端，不继续堆伪装头。
+3. “最大输出 tokens”只在 Anthropic 路由且模型真实上限已确认时填写；不确认时保留默认并将截断验证列为待测。
+4. 模型映射只加入已确认模型；逐项填写真实能力，不复制来源 Claude provider 中未验证的角色模型能力。
+5. Chat / Anthropic 上游开启本地路由总开关和 Codex 接管。记录当前实际监听地址，不把默认端口当成永久事实。
+6. 保存后只读复查：应用类型、provider ID、名称、`meta.apiFormat`、Base URL、默认模型、凭据存在性没有串到其他 provider。
+7. CC Switch 正在运行时，界面可能仍是内存缓存；需要用户重新打开应用查看新卡，但不能因此去 Enable。
+8. 默认模型：用户指定则按用户指定；未指定则使用本次推荐值。口语名先解析成上游真实 ID。
+9. 同步完成后必须输出结果，不得只写“已保存”。
 
 ## 7. 生成结果验证表
 
 | 验证项 | 预期结果 | 失败时归属 |
 | --- | --- | --- |
-| Provider 持久化记录 | Codex 应用、ID、协议、上游地址和模型均正确 | CC Switch 表单 / 数据库持久化 |
+| Provider 持久化记录 | Codex 应用、ID、协议、上游地址和模型均正确 | CC Switch 供应商记录持久化 |
 | 活动 TOML 可解析 | Codex 启动时无 `config_load` Schema 错误 | Codex 配置生成 |
 | Responses 直连 | 活动 Base URL 指向真实上游，请求命中 `/responses` | 上游协议 / 认证 |
 | Chat / Anthropic 路由 | 活动 Base URL 指向本地路由，路由当前 Provider 命中目标供应商 | 路由接管 / provider 选择 |
