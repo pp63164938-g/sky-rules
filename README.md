@@ -32,6 +32,25 @@ sky-rules/
 └── README.md
 ```
 
+## 前置依赖
+
+同步脚本 `sync-workflows.py` 和 `scripts/check-rules.py` 仅使用 **Python 标准库**，无需 `pip install` 任何第三方包。唯一要求是本机装有 **Python 3.8+**（脚本用到 `X | Y` 类型注解语法）。
+
+- **安装 Python（Windows）**：`winget install Python.Python.3.12`
+  - 安装后请**新开一个终端**，PATH 才会生效。
+  - Windows 自带一个商店占位别名 `C:\Users\<你>\AppData\Local\Microsoft\WindowsApps\python.exe`，运行它只会弹出应用商店。winget 安装会把真 Python 加到 PATH 更靠前的位置，新终端里裸 `python` 即指向真解释器；若仍命中占位别名，到「设置 → 应用 → 高级应用设置 → 应用执行别名」关掉 `python.exe`。
+  - 验证：`python --version` 应输出 `Python 3.x.x` 而非无输出或弹窗。
+- **macOS / Linux**：一般已自带 `python3`，命令里把 `python` 换成 `python3` 即可。
+
+## 新电脑 / 新成员接入（4 步）
+
+1. **克隆仓库**：`git clone https://github.com/pp63164938-g/sky-rules.git`，放到任意本地目录。
+2. **装 Python**：见上方「前置依赖」，确认 `python --version` 正常。
+3. **体检**：进入仓库目录跑 `python sync-workflows.py --doctor`。它会逐项报告源文件、各编辑器目标路径、是否可写；未安装的编辑器会自动 SKIP，不影响。看到「OK 当前电脑可以执行同步」即可继续。
+4. **同步**：`python sync-workflows.py --no-git`。完成后重启对应编辑器/插件生效。
+
+> 说明：`~/.sky-rules/local.json`（记录本机仓库路径）由脚本**首次运行时自动创建并回写**，无需手动填写；它和 `sync-targets.local.json`（本机私有同步目标）都不纳入 Git，属于每台机器的本地配置。公共规则与工作流随 Git 同步，`git pull` 即可获取他人更新，再跑一次同步落到本机编辑器。
+
 ## 维护入口
 
 | 入口 | 面向对象 | 作用 |
@@ -58,6 +77,7 @@ sky-rules/
 | Antigravity | `~/.gemini/GEMINI.md` | Gemini CLI 要求的固定文件名 |
 | Windsurf | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 要求的固定文件名 |
 | Codex | `~/.codex/AGENTS.md` | Codex 用户级全局规则 |
+| Claude Code | `~/.claude/CLAUDE.md` | Claude Code 用户级全局规则（经 `sync-targets.json` 接入） |
 
 > 修改规则时应先通过 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标源文件；新增规则文件后必须更新 manifest，运行同步脚本后各编辑器自动生效。
 
@@ -95,6 +115,7 @@ sky-rules/
 | `workflows/*.md` | `~/.codeium/windsurf/global_workflows/` | Windsurf 工作流 |
 | `workflows/*.md` | `~/.gemini/antigravity/global_workflows/` | Antigravity 工作流 |
 | `workflows/*.md` | `~/.codex/skills/` | Codex Skills |
+| `workflows/*.md` | `~/.claude/skills/` | Claude Code Skills（经 `sync-targets.json` 接入） |
 | `workflows/references/*.md` | 普通工作流目录或对应 Codex Skill 的 `references/` | 按 `<skill-name>--<topic>.md` 归属并按需读取的引用资源 |
 | `project-catalog.json` | 所有启用平台的 `base-project-context` 工作流或 Skill 同目录 | 项目上下文工作流伴随资源；内容必须与唯一源文件一致 |
 | `rules/rules-manifest.json` | `~/.gemini/GEMINI.md` | Antigravity 全局规则（按 manifest 拼接） |
@@ -198,6 +219,8 @@ python sync-workflows.py --no-git
 | Antigravity/Gemini 全局规则 | `~/.gemini/GEMINI.md` |
 | Codex 全局规则 | `~/.codex/AGENTS.md` |
 | Codex Skills | `~/.codex/skills/` |
+| Claude Code 全局规则 | `~/.claude/CLAUDE.md`（经 `sync-targets.json` 接入，可用 `SKY_RULES_CLAUDE_RULES_FILE` 覆盖） |
+| Claude Code Skills | `~/.claude/skills/`（经 `sync-targets.json` 接入，可用 `SKY_RULES_CLAUDE_SKILLS_DIR` 覆盖） |
 
 如果某台电脑的目录不同，不要修改 `sync-workflows.py`，优先配置环境变量：
 

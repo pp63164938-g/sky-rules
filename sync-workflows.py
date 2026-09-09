@@ -574,6 +574,8 @@ def run_codex_prompt_input_probe(expected_skill_names: list[str]) -> tuple[str, 
             cwd=ROOT,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=15,
         )
     except (OSError, subprocess.TimeoutExpired) as error:

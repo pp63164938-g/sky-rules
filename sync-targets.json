@@ -1,0 +1,22 @@
+{
+  "targets": [
+    {
+      "name": "Claude 全局规则",
+      "mode": "codex_rules",
+      "source": "rules/rules-manifest.json",
+      "target": "${HOME}/.claude/CLAUDE.md",
+      "target_env": "SKY_RULES_CLAUDE_RULES_FILE",
+      "detect": "${HOME}/.claude"
+    },
+    {
+      "name": "Claude Skills",
+      "mode": "agents_skills",
+      "source": "workflows",
+      "target": "${HOME}/.claude/skills",
+      "target_env": "SKY_RULES_CLAUDE_SKILLS_DIR",
+      "detect": "${HOME}/.claude",
+      "pattern": "*.md",
+      "exclude": ["README.md"]
+    }
+  ]
+}
