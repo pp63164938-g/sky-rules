@@ -29,5 +29,6 @@
 - 请求异常提示沿用当前模块已经验证的 Kunlun 请求配置。若项目仍使用统一 `message` 常量，则在 API 文件头统一声明并在请求配置中复用；当前模块源码不一致时不得强行套用旧写法。
 - 请求入参、响应类型、`Omix` 边界和跨接口字段归属执行全局 API 类型规则。已确认响应禁止使用 `request<Omix>` 或 `request<Array<Omix>>`。
 - 当前项目确实使用 `src/api/{module}/interface/{domain}.resolver.ts` 和统一出口时，复杂或外部消费 DTO 沿用该结构并补齐导出链；项目结构变化时先以全项目真实类型出口为准。
+- 无既定结构时，复杂或外部消费 DTO 默认写入与 API 文件同名的 `{api-file}.types.ts`（如 `docking-landing.ts` ↔ `docking-landing.types.ts`），不直接堆进模块级 `types.ts`；模块级 `types.ts` 仅放跨多个 API 文件复用的公共类型。
 - API 实现文件只保留请求函数、必要导入、请求配置和少量 Mock 接线；结构化 Mock 数据进入同目录独立 Mock 文件。普通业务 URL 在函数定义处直接写完整路径，不抽局部前缀常量。
 - 接口路径、方法、Query、Body、响应路径、字段类型和枚举值只能来自当前目标接口，禁止跨接口借字段或猜测导入路径。
