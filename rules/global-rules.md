@@ -38,7 +38,7 @@ alwaysApply: true
 | 菜单与权限管理 | `kl-menu-manage`、`Git 操作规范` |
 | i18n 翻译 | `i18n 翻译规范`、`i18n 文件扩展规范（通用）` |
 | 样式 / UI 还原 | `CSS/SCSS 样式规范`、`UI 与设计图还原规范` |
-| 提交 / 推送 | `Git 操作规范`、`base-git-commit-message` |
+| 提交 / 推送 | `Git 操作规范`、必须主动使用 `base-git-commit-message` |
 
 ## 需求文档驱动开发闭环工作流显式触发
 
@@ -57,6 +57,12 @@ alwaysApply: true
 当当前项目为 `skyline-kunlun-ui-main`，且任务涉及标准 Kunlun 页面生成或改造时，包括列表页、搜索表单、表格、弹窗、详情页、标准下拉 Options、`dev-template` 骨架、`sky-table-pagination`、`sky-search-form-a`、`com-form-*` 等，AI 必须主动使用 `kl-gen-page` 工作流，不需要等用户显式输入 `$kl-gen-page`。
 
 纯局部文案、简单样式微调、单点 bug 修复可按对应场景规则处理；但只要改动影响标准页面骨架、表格 / 搜索 / 弹窗 / 详情结构或下拉数据链路，就必须回到 `kl-gen-page` 约束。
+
+## Git 提交工作流主动触发
+
+当用户要求提交、提交推送、生成 git/commit 信息或 commit message 时，AI 必须主动使用 `base-git-commit-message` 工作流，不需要等用户显式输入 `$base-git-commit-message`。
+
+纯 `git status`、`git diff`、`git log` 等只读查看不触发本工作流。`Git 操作规范` 只约束 add / commit / push 的权限和范围；commit message 格式、差异核对和调试代码检查必须先走该工作流。
 
 ## 示例编写要求
 

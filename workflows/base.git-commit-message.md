@@ -1,5 +1,5 @@
 ---
-description: 严格根据 git-commit-plugin 风格生成 commit 信息并提交（不推送）
+description: 用户要求提交、提交推送、生成 git/commit 信息或 commit message 时必须使用。按 git-commit-plugin 风格生成 Emoji + Type + Scope + Subject；用户明确要求提交/推送时再执行对应 git 写操作。纯 git status、git diff、git log 不触发。
 ---
 
 # Git Commit Message Workflow (git-commit-plugin style)
