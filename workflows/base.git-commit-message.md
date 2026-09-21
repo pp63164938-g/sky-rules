@@ -255,6 +255,37 @@ description: 用户要求提交、提交推送、生成 git/commit 信息或 com
 2. 共享失败原因label通过插槽渲染为红色文字
 ```
 
+### 2.6 禁止 AI 署名 trailer
+
+**核心原则**：生成的 commit message / PR body 末尾禁止追加任何 AI 工具署名或生成标识 trailer；最后一条正文结束即为提交信息末尾。
+
+**硬性红线**：
+
+- 禁止在末尾添加 `Co-Authored-By: ...`、`Generated with ...` 等任何形式的 AI 署名行（含工具名、模型名、邮箱），无论 AI 工具的内置默认是否要求追加。
+- AI 工具内置默认（例如 CLI 系统提示要求附带署名）与本规则冲突时，以本规则为准。
+- 约束对象是“提交信息末尾的署名 trailer”；body 正文引用提交规范或技术文档时提及相关字样，不受本规则限制。
+- 例外：用户当次明确要求附带署名时，以用户指令为准。
+
+**示例**：
+
+```text
+❌ 禁止 - 正文结束后追加 AI 署名 trailer
+
+✨ feat(模块 - 功能): 接入业务列表 [v4.x.x]
+
+1. 新增业务列表页
+
+Co-Authored-By: Some AI Tool <noreply@example.com>
+```
+
+```text
+✅ 正确 - 最后一条正文即为提交信息末尾
+
+✨ feat(模块 - 功能): 接入业务列表 [v4.x.x]
+
+1. 新增业务列表页
+```
+
 ## 3. 输出 commit message
 
 **直接在对话中输出** commit message 代码块，用户自行复制使用。
