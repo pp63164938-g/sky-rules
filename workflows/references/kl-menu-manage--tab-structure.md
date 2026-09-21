@@ -19,6 +19,20 @@
 - Tab 内按钮：`{Tab international}:{后缀}`，父级是 Tab 资源，不是页面父级。
 - 无导出入口不编 `:export`。
 
+## 菜单名称与页签文案
+
+两套名字不要混：
+
+| 位置 | 规则 | 例子 |
+| --- | --- | --- |
+| 资源 `name`（菜单管理列表） | `tab-` + 页签中文标题 | `tab-业务页签` |
+| 页面 Tab `label` | 只有中文标题，**不加** `tab-` | `业务页签` |
+| `international` | `{父级}:tab-{英文slug}` | `module:biz:page:tab-xxx` |
+
+- 管理列表用 `tab-` 前缀区分隐藏子菜单；权限 key 仍看 `international`，不看中文名。
+- 禁止把 Vue `label` 写成 `tab-xxx`。
+- 禁止把中文 `tab-` 前缀写进 `international`。
+
 ## 前端
 
 - 全量 `allTabsList`，每项含 `sign` = Tab `international`。
