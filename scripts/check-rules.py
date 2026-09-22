@@ -59,6 +59,7 @@ REQUIRED_ASSEMBLED_MARKERS = [
     "**AI 规则 / Skills 同步验证规范**",
     "## Element Plus Namespace 规范",
     "## 生效规则显性告知门禁",
+    "# JS/TS 语言规范",
 ]
 
 
@@ -412,7 +413,7 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
     manifest_paths = get_manifest_paths(entries)
     expected_paths: set[str] = {"global-rules.md"}
 
-    for directory_name in ["common", "frontend", "backend", "projects"]:
+    for directory_name in ["common", "lang", "frontend", "backend", "projects"]:
         directory = RULES_DIR / directory_name
         if not directory.exists():
             STATE.warn(f"规则目录不存在: rules/{directory_name}")
@@ -431,7 +432,7 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
         STATE.fail(f"manifest 引用了非标准规则源文件: {', '.join(extra_paths)}")
 
     if not missing_paths and not extra_paths:
-        STATE.ok("rules/common、rules/frontend、rules/backend、rules/projects 下的规则文件均已进入 manifest")
+        STATE.ok("rules/common、rules/lang、rules/frontend、rules/backend、rules/projects 下的规则文件均已进入 manifest")
 
 
 def check_index_files(entries: list[dict[str, str]]) -> None:

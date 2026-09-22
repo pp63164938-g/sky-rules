@@ -24,7 +24,7 @@
     {
       "path": "common/40-comments.md",
       "title": "通用代码清理与注释",
-      "description": "代码清理、变量 / 函数 / 模板 / 样式注释、文件头注释"
+      "description": "代码清理、注释内容边界、文件头注释"
     },
     {
       "path": "common/50-docs-debugging-api.md",
@@ -37,9 +37,19 @@
       "description": "前后端分层验证、契约测试、数据库迁移、兼容发布、回滚和交付验收"
     },
     {
+      "path": "lang/js-ts.md",
+      "title": "JS/TS 语言规范",
+      "description": "JS/TS 注释、TypeScript 类型处理、枚举映射与条件分支、相等运算符、函数抽象边界、变量命名"
+    },
+    {
+      "path": "lang/java.md",
+      "title": "Java 语言规范",
+      "description": "以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款"
+    },
+    {
       "path": "frontend/10-components-types.md",
       "title": "前端组件函数类型查证",
-      "description": "组件 / 函数 / Hook 查证、公共能力复用、业务组件边界、TypeScript 类型处理"
+      "description": "组件 / 函数 / Hook 查证、公共能力复用、业务组件边界、前端业务类型位置"
     },
     {
       "path": "frontend/20-style-ui.md",
@@ -48,13 +58,13 @@
     },
     {
       "path": "frontend/30-routing-enum-branch.md",
-      "title": "前端路由枚举分支交互",
-      "description": "Vue 路由、枚举映射、条件分支、兜底值、交互前置状态与按钮提示"
+      "title": "前端路由交互",
+      "description": "Vue 路由、交互前置状态与按钮提示"
     },
     {
       "path": "frontend/40-function-hook-reactive.md",
-      "title": "前端函数 Hook 响应式命名",
-      "description": "函数抽象边界、Vue Hook 抽离、computed 使用、变量命名"
+      "title": "前端 Hook 与响应式",
+      "description": "Vue Hook 抽离、computed 使用"
     },
     {
       "path": "frontend/50-i18n.md",
@@ -68,8 +78,8 @@
     },
     {
       "path": "frontend/70-vue-file-header.md",
-      "title": "前端 Vue 文件头注释",
-      "description": "新建 Vue 组件文件的头部说明注释规范"
+      "title": "前端 Vue 注释规范",
+      "description": "Vue 组件业务说明注释、文件头部注释、HTML/Vue 模板注释"
     },
     {
       "path": "backend/10-service-api-contract.md",
