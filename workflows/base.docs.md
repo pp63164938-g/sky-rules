@@ -1,8 +1,12 @@
 ---
-description: 根据项目文档规范执行（优先读取 docs 目录；接口问题查询线上接口文档）
+description: 根据项目文档规范执行（需求文档优先查 project-catalog.json；优先读取 docs 目录；接口问题查询线上接口文档）
 ---
 
 1. **搜索项目文档**
+   - **需求文档优先走项目目录**：当任务是查找或读取产品需求文档时，先按 `base-project-context` 读取 `project-catalog.json`，确认是否注册了需求文档来源（如 Git 需求文档仓库）。
+     - 目录命中时，按该条目的 `rules` 定位并读取；Git 仓库来源按其规则用 `git fetch` + `origin/main` 快照读取，禁止 `git pull`、切换分支或覆盖本地工作区。
+     - 目录未命中时，再继续按项目 `docs` 目录、根目录文档、线上接口文档的顺序查找。
+     - 禁止仅因当前项目本地目录找不到需求文档，就判定“没有需求文档”或转而按截图、口头描述开发。
    - 优先在项目根目录下搜索 `docs` 目录。
    - 使用 `find_by_name` 或 `list_dir` 查找 `docs` 目录下的关键文件（如 `README.md`, `design`, `spec`, `requirements` 等）。
    - **优先级规则**：`docs` 目录 > `openspec` 目录 > 根目录 `README.md`/`api.md`。

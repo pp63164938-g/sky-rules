@@ -27,6 +27,7 @@ alwaysApply: true
 | 场景 | 优先读取 |
 | --- | --- |
 | 项目路径 / 项目上下文定位 | `base-project-context` |
+| 需求文档定位 / 产品需求读取 | `base-project-context`、`base-docs` |
 | 接口查询 / 文档确认 | `base-docs`、`联调开发规范` |
 | 前后端联调 / Mock 替换 | `base-debugging`、`静态接口开发规范`、`联调开发规范` |
 | 前端页面 / 组件 / 样式 / i18n / Icon | `rules/frontend/` 对应规则、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
@@ -48,7 +49,7 @@ alwaysApply: true
 
 ## 项目上下文工作流主动触发
 
-当用户提供页面文件路径、项目目录、当前工作区或项目说明，并要求进行开发、修改、联调、排查或需求分析时，必须先使用 `base-project-context` 读取 `project-catalog.json`，识别当前项目及其文档目录和专属要求。
+当用户提供页面文件路径、项目目录、当前工作区或项目说明，并要求进行开发、修改、联调、排查、读取需求文档或需求分析时，必须先使用 `base-project-context` 读取 `project-catalog.json`，识别当前项目及其文档目录和专属要求。
 
 未找到目录文件或未匹配项目时，应说明识别结果后继续使用通用规则；禁止继承或套用其他项目的目录关系和专属要求。
 
