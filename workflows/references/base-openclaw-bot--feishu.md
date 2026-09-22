@@ -62,14 +62,15 @@
 
 1. Account 的 App ID 与飞书应用一致，秘密字段已安全写入且未回显。
 2. Agent ID、Account ID、Binding 和 Workspace 对应同一机器人。
-3. Workspace 中存在该机器人的 `AGENTS.md`、`SOUL.md` 和所需业务 Skill；`AGENTS.md` 明确空 `@` 默认行为或明确退回询问。
-4. 全局共享 Skill 能被 OpenClaw 发现，但专用 Agent 通过显式 `agents.list[].skills` 只加载职责所需 Skill，且不具备自改全局配置和密钥的权限。
-5. `typingIndicator` 显式为 `true`，并有真实消息上的出现与清除证据。
-6. OpenClaw Schema、仓库配置校验器和 Cron/Timer 冲突校验器均通过；专用机器人已用重复的 `--agent-skill` 验证完整 Skill 白名单，用 `--require-tool` / `--forbid-tool` 验证显式 `tools.allow`，不会继承无关 Skill 或高权限工具。
-7. 模型鉴权冒烟测试成功，不存在 401、模型不存在或上游超时。
-8. 私聊、群内带文字直接 `@`、群内空 `@` 的端到端测试均有日志证据；`skills list --agent <Agent ID> --eligible --json` 或模型运行报告只出现预期业务 Skill。
-9. 每个定时任务都完成受控试跑：单入口、单实例、无更新静默、有更新投递、错误可读且不泄露内部命令。
-10. 网关重载使用有界健康轮询完成验收，没有把启动期间的一次连接拒绝误报为部署失败。
+3. Agent 目录 `~/.openclaw/agents/<Agent ID>` 及其内容的属主与网关运行用户一致；以 root 或其他用户手动创建时，网关派发消息会因无写权限静默失败。修正属主后重发消息验证，并以同路径下已有正常 Agent 目录的属主作为对照。
+4. Workspace 中存在该机器人的 `AGENTS.md`、`SOUL.md` 和所需业务 Skill；`AGENTS.md` 明确空 `@` 默认行为或明确退回询问。
+5. 全局共享 Skill 能被 OpenClaw 发现，但专用 Agent 通过显式 `agents.list[].skills` 只加载职责所需 Skill，且不具备自改全局配置和密钥的权限。
+6. `typingIndicator` 显式为 `true`，并有真实消息上的出现与清除证据。
+7. OpenClaw Schema、仓库配置校验器和 Cron/Timer 冲突校验器均通过；专用机器人已用重复的 `--agent-skill` 验证完整 Skill 白名单，用 `--require-tool` / `--forbid-tool` 验证显式 `tools.allow`，不会继承无关 Skill 或高权限工具。
+8. 模型鉴权冒烟测试成功，不存在 401、模型不存在或上游超时。
+9. 私聊、群内带文字直接 `@`、群内空 `@` 的端到端测试均有日志证据；`skills list --agent <Agent ID> --eligible --json` 或模型运行报告只出现预期业务 Skill。
+10. 每个定时任务都完成受控试跑：单入口、单实例、无更新静默、有更新投递、错误可读且不泄露内部命令。
+11. 网关重载使用有界健康轮询完成验收，没有把启动期间的一次连接拒绝误报为部署失败。
 
 ## 常见失败与定位顺序
 
@@ -78,6 +79,7 @@
 - 飞书没有入站日志：检查机器人是否加入会话、事件订阅、长连接、权限和应用发布状态。
 - 入站日志存在但路由到错误 Agent：检查 Account ID 与 Binding。
 - 网关已连接但无回复：检查 Agent 执行日志、模型调用和 Workspace，不要直接归因于飞书。
+- 私聊与群消息均无回复，网关日志出现 `EACCES: permission denied`（创建会话目录失败）：Agent 目录属主不是网关运行用户；将 `~/.openclaw/agents/<Agent ID>` 属主修正为网关运行用户后重发消息验证，无需改动配置。
 - 部署脚本报告 `connection refused` 但稍后网关正常：检查是否只做了固定延时后的单次健康请求；改为有上限的服务状态与健康接口联合轮询，再依据超时结果判断。
 - 首次消息没有任何回复且日志出现 401：先修复模型凭据并重新做模型冒烟，不要继续调整飞书白名单。
 - 只有空 `@` 没反应：检查通道空消息处理是否仍跳过、共享兼容层是否因版本升级失效，以及 Workspace 是否定义默认行为；禁止为每个 Account 复制一份硬编码补丁。
