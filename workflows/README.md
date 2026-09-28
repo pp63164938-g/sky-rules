@@ -104,6 +104,7 @@ allow_implicit_invocation: false
 | 根据接口文档联调 | `base.debugging.md`、`base.docs.md` |
 | 用户显式指定后，根据需求文档推进前端、后端或全栈开发闭环 | `base.requirement-dev-closed-loop.md` |
 | 创建、扩展、修复或验收飞书 OpenClaw 机器人 | `base.openclaw-bot.md` |
+| 按调用链把本地项目跑到可验证状态 | `base.run-dev.md` |
 | 生成 Kunlun 页面 | `kl.gen-page.md` |
 | 管理 Kunlun 菜单权限 | `kl.menu-manage.md` |
 | 生成提交信息并提交 | `base.git-commit-message.md` |
