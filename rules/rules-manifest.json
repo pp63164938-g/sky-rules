@@ -42,11 +42,6 @@
       "description": "JS/TS 注释、TypeScript 类型处理、枚举映射与条件分支、相等运算符、函数抽象边界、变量命名"
     },
     {
-      "path": "lang/java.md",
-      "title": "Java 语言规范",
-      "description": "以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款"
-    },
-    {
       "path": "frontend/10-components-types.md",
       "title": "前端组件函数类型查证",
       "description": "组件 / 函数 / Hook 查证、公共能力复用、业务组件边界、前端业务类型位置"
@@ -82,24 +77,34 @@
       "description": "Vue 组件业务说明注释、文件头部注释、HTML/Vue 模板注释"
     },
     {
-      "path": "backend/10-service-api-contract.md",
+      "path": "enterprise/sky/backend/10-service-api-contract.md",
       "title": "后端接口契约与服务分层",
       "description": "服务端接口契约、DTO、Controller / Service 分层、响应结构和错误码"
     },
     {
-      "path": "backend/20-data-persistence.md",
+      "path": "enterprise/sky/backend/20-data-persistence.md",
       "title": "后端数据持久化与事务",
       "description": "数据库结构、Migration、SQL / ORM、事务、幂等和数据一致性"
     },
     {
-      "path": "backend/30-auth-permission-security.md",
+      "path": "enterprise/sky/backend/30-auth-permission-security.md",
       "title": "后端鉴权权限与安全边界",
       "description": "服务端鉴权、权限校验、资源归属、租户隔离和敏感信息保护"
     },
     {
-      "path": "backend/40-jobs-cache-observability.md",
+      "path": "enterprise/sky/backend/40-jobs-cache-observability.md",
       "title": "后端任务缓存与可观测性",
       "description": "定时任务、队列、缓存、分布式锁、日志、指标、告警和失败终态"
+    },
+    {
+      "path": "enterprise/sky/backend/50-multi-version-local-debug.md",
+      "title": "多版本开发部署与本地联调",
+      "description": "版本标识、本地环境变量、页面版本参数和请求头透传"
+    },
+    {
+      "path": "enterprise/sky/lang/java.md",
+      "title": "Java 语言规范",
+      "description": "以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款"
     },
     {
       "path": "common/80-terminal-node-model.md",

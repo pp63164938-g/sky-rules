@@ -1,6 +1,6 @@
 # 后端数据持久化与事务规范
 
-> **来源**：sky 企业后端文档（企业规范）。本文件为语言无关的后端端规则，Java / Node 后端均适用；语言层细则见 `rules/lang/`。
+> **来源**：sky 企业后端文档。归属 `rules/enterprise/sky/backend/`。本文件为语言无关的后端端规则，Java / Node 后端均适用；sky 的 Java 语言层细则见 `rules/enterprise/sky/lang/java.md`。
 
 **核心原则**：数据库结构、写入流程和事务边界必须服务真实业务一致性，禁止用临时 SQL、隐式字段或无确认迁移掩盖数据模型问题。
 

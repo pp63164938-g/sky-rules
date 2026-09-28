@@ -413,7 +413,7 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
     manifest_paths = get_manifest_paths(entries)
     expected_paths: set[str] = {"global-rules.md"}
 
-    for directory_name in ["common", "lang", "frontend", "backend", "projects"]:
+    for directory_name in ["common", "lang", "frontend", "projects"]:
         directory = RULES_DIR / directory_name
         if not directory.exists():
             STATE.warn(f"规则目录不存在: rules/{directory_name}")
@@ -421,6 +421,20 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
 
         for rule_file in sorted(directory.glob("*.md")):
             expected_paths.add(rule_file.relative_to(RULES_DIR).as_posix())
+
+    enterprise_root = RULES_DIR / "enterprise"
+    if not enterprise_root.exists():
+        STATE.fail("企业规范目录不存在: rules/enterprise")
+    else:
+        for enterprise_dir in sorted(path for path in enterprise_root.iterdir() if path.is_dir()):
+            enterprise_rules = sorted(enterprise_dir.rglob("*.md"))
+            enterprise_rules = [
+                rule_file for rule_file in enterprise_rules if rule_file.name != "README.md"
+            ]
+            if not enterprise_rules:
+                STATE.fail(f"企业规范目录没有规则文件: {enterprise_dir.relative_to(RULES_DIR).as_posix()}")
+            for rule_file in enterprise_rules:
+                expected_paths.add(rule_file.relative_to(RULES_DIR).as_posix())
 
     missing_paths = sorted(expected_paths - manifest_paths)
     extra_paths = sorted(manifest_paths - expected_paths)
@@ -432,7 +446,7 @@ def check_rule_files_are_listed(entries: list[dict[str, str]]) -> None:
         STATE.fail(f"manifest 引用了非标准规则源文件: {', '.join(extra_paths)}")
 
     if not missing_paths and not extra_paths:
-        STATE.ok("rules/common、rules/lang、rules/frontend、rules/backend、rules/projects 下的规则文件均已进入 manifest")
+        STATE.ok("个人规则与 rules/enterprise 下的企业规则文件均已进入 manifest")
 
 
 def check_index_files(entries: list[dict[str, str]]) -> None:
@@ -460,7 +474,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "rules/rules-manifest.json",
         "rules/common/",
         "rules/frontend/",
-        "rules/backend/",
+        "rules/enterprise/",
         "assembled_rules",
         "codex_rules",
         "scripts/check-rules.py",
@@ -511,7 +525,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "rules/rules-manifest.json",
         "rules/common/",
         "rules/frontend/",
-        "rules/backend/",
+        "rules/enterprise/sky/",
         "scripts/check-rules.py",
         "project-catalog.json",
         "workflows/references/",
@@ -535,7 +549,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "rules/rules-manifest.json",
         "rules/common/",
         "rules/frontend/",
-        "rules/backend/",
+        "rules/enterprise/README.md",
         "scripts/check-rules.py",
         "闭环验收结果",
         "内置自检",

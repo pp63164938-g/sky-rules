@@ -1,6 +1,6 @@
 # 后端鉴权权限与安全边界规范
 
-> **来源**：sky 企业后端文档（企业规范）。本文件为语言无关的后端端规则，Java / Node 后端均适用；语言层细则见 `rules/lang/`。
+> **来源**：sky 企业后端文档。归属 `rules/enterprise/sky/backend/`。本文件为语言无关的后端端规则，Java / Node 后端均适用；sky 的 Java 语言层细则见 `rules/enterprise/sky/lang/java.md`。
 
 **核心原则**：安全边界必须由服务端强制执行，前端显隐和按钮禁用只能提升体验，不能作为权限、数据隔离或敏感操作的依据。
 

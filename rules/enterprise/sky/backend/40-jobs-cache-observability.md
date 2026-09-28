@@ -1,6 +1,6 @@
 # 后端任务缓存与可观测性规范
 
-> **来源**：sky 企业后端文档（企业规范）。本文件为语言无关的后端端规则，Java / Node 后端均适用；语言层细则见 `rules/lang/`。
+> **来源**：sky 企业后端文档。归属 `rules/enterprise/sky/backend/`。本文件为语言无关的后端端规则，Java / Node 后端均适用；sky 的 Java 语言层细则见 `rules/enterprise/sky/lang/java.md`。
 
 **核心原则**：后台任务、缓存和异步流程必须具备可重试、可观测、可恢复的边界，禁止失败后静默吞噬或让数据状态不可解释。
 

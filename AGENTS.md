@@ -35,7 +35,9 @@
 | `rules/global-rules.md` | 全局规则常驻入口，只承载核心理念、P0 红线、场景索引等高优先级内容 |
 | `rules/common/` | 前后端通用规则，例如工作流、禁止发散、格式化、注释、接口联调、跨端测试发布、终端验证 |
 | `rules/frontend/` | 前端专属规则，例如组件类型、样式、路由、i18n、Icon、Vue 文件头 |
-| `rules/backend/` | 后端专属规则，例如服务分层、接口契约、数据持久化、鉴权安全、任务缓存 |
+| `rules/backend/` | 个人后端规则。sky 后端规范不放这里 |
+| `rules/enterprise/` | 企业规范目录。一家企业一个子目录，新增企业先读 `rules/enterprise/README.md` |
+| `rules/enterprise/sky/` | sky 企业规范，包含后端规范、Java 语言规范和多版本本地联调 |
 | `rules/projects/` | 项目专属规则，只放特定项目需要遵守的补充规则 |
 | `workflows/README.md` | 工作流维护索引，说明命名、归属、扩展标准 |
 | `workflows/*.md` | 各场景工作流源文件，会同步为 Windsurf / Antigravity 工作流和 Codex Skills |
@@ -45,7 +47,7 @@
 
 ## 新增规则流程
 
-1. 判断归属：前后端都适用的规则进 `rules/common/`；前端专属规则进 `rules/frontend/`；后端专属规则进 `rules/backend/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；跨项目工具配置、接入和排障流程进 `workflows/tool.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；`workflows/more-tool.*.md` 只保留给 More-Tool 项目；其他项目专属规则留在对应项目。
+1. 判断归属：前后端都适用的个人规则进 `rules/common/`；前端个人规则进 `rules/frontend/`；不归属企业的后端个人规则进 `rules/backend/`；企业规范进 `rules/enterprise/<企业标识>/`，sky 当前使用 `rules/enterprise/sky/`；P0 红线和场景索引才进 `rules/global-rules.md`；通用流程进 `workflows/base.*.md`；跨项目工具配置、接入和排障流程进 `workflows/tool.*.md`；Kunlun 专属流程进 `workflows/kl.*.md`；`workflows/more-tool.*.md` 只保留给 More-Tool 项目；其他项目专属规则留在对应项目。
 2. 搜索查重：先搜索 `rules/` 和 `workflows/`，已有相近内容时优先补充旧规则。
 3. 定位章节：按 `rules/README.md` 和 `rules/rules-manifest.json` 找目标文件，按主题插入，禁止追加到无关文件末尾；工作流接近 500 行、读取被截断或包含多个独立场景时，按 `workflows/README.md` 拆入按需引用。
 4. 规则质量自审：提炼稳定不变量和约束对象，检查未来绕过、合法场景误伤、事实失效、规则冲突和触发可见性；未通过时先重写。

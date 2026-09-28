@@ -1,6 +1,6 @@
 # 全局规则维护索引
 
-`rules/` 用于维护跨项目、跨 AI 工具通用的规则正文。规则源文件按 `common/`、`lang/`、`frontend/`、`backend/`、`projects/` 拆分，`sync-workflows.py` 会按 `rules/rules-manifest.json` 的顺序拼接为各 AI 工具实际读取的完整全局规则。
+`rules/` 用于维护跨项目、跨 AI 工具通用的规则正文。个人规则按 `common/`、`lang/`、`frontend/`、`backend/`、`projects/` 拆分；企业规范按 `enterprise/<企业标识>/` 拆分。`sync-workflows.py` 会按 `rules/rules-manifest.json` 的顺序拼接为各 AI 工具实际读取的完整全局规则。
 
 ## 文件职责
 
@@ -9,9 +9,11 @@
 | `global-rules.md` | 常驻入口，只放核心理念、P0 红线、场景索引、示例要求等高优先级内容 |
 | `rules-manifest.json` | 全局规则拼接清单，决定同步到各 AI 工具的规则顺序 |
 | `common/` | 前端、后端和其他开发任务都必须遵守的通用规则 |
-| `lang/` | 语言层规则，约束 JS/TS、Java 等语言本身的写法，与端无关 |
-| `frontend/` | 前端专属规则，约束 Vue、组件、Hook、样式、UI、路由、i18n、Icon 等 |
-| `backend/` | 后端专属规则（来源：sky 企业后端文档，企业规范），约束接口实现、服务分层、数据库、鉴权、安全、任务、缓存、日志等 |
+| `lang/` | 个人语言层规则，约束 JS/TS 等语言本身的写法，与端无关 |
+| `frontend/` | 个人前端规则，约束 Vue、组件、Hook、样式、UI、路由、i18n、Icon 等 |
+| `backend/` | 个人后端规则。当前没有个人后端规则文件；sky 后端规范不放这里 |
+| `enterprise/` | 企业规范。一家企业一个目录，维护入口见 `enterprise/README.md` |
+| `enterprise/sky/` | sky 企业规范，包含后端规范、Java 语言规范和多版本本地联调 |
 | `projects/` | 项目专属规则，只放特定项目需要遵守的补充规则 |
 | `../scripts/check-rules.py` | 规则仓库自检脚本，检查 manifest、索引、拼接结果和同步产物 |
 
@@ -27,7 +29,8 @@
 | `common/50-docs-debugging-api.md` | 通用文档接口联调 | 静态接口、TODO 字段、联调开发、跨接口字段归属、临时代码标记 |
 | `common/60-testing-release.md` | 全栈测试、迁移与发布 | 前后端分层验证、契约测试、数据库迁移、兼容发布、回滚和交付验收 |
 | `lang/js-ts.md` | JS/TS 语言规范 | JS/TS 注释、TypeScript 类型处理、枚举映射与条件分支、相等运算符、函数抽象边界、变量命名 |
-| `lang/java.md` | Java 语言规范 | 以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款 |
+| `enterprise/README.md` | 企业规范目录 | 企业目录划分、新增企业步骤、企业冲突优先级 |
+| `enterprise/sky/README.md` | sky 企业规范入口 | sky 的适用任务、已收录文件、原始文档入口和维护方式 |
 | `frontend/10-components-types.md` | 前端组件函数类型查证 | 组件 / 函数 / Hook 查证、公共能力复用、业务组件边界、前端业务类型位置 |
 | `frontend/20-style-ui.md` | 前端样式与 UI 还原 | CSS/SCSS、布局弹性、组件默认样式、UnoCSS、UI 设计图还原 |
 | `frontend/30-routing-enum-branch.md` | 前端路由交互 | Vue 路由、交互前置状态与按钮提示 |
@@ -35,10 +38,12 @@
 | `frontend/50-i18n.md` | 前端 i18n 翻译规范 | 禁止自动翻译、i18n key 扩展、语言文件扩展与 HTML 样式限制 |
 | `frontend/60-icon.md` | 前端 Icon 使用规范 | Icon 来源、使用方式查证、临时 Icon 标记 |
 | `frontend/70-vue-file-header.md` | 前端 Vue 注释规范 | Vue 组件业务说明注释、文件头部注释、HTML/Vue 模板注释 |
-| `backend/10-service-api-contract.md` | 后端接口契约与服务分层 | 服务端接口契约、DTO、Controller / Service 分层、响应结构和错误码 |
-| `backend/20-data-persistence.md` | 后端数据持久化与事务 | 数据库结构、Migration、SQL / ORM、事务、幂等和数据一致性 |
-| `backend/30-auth-permission-security.md` | 后端鉴权权限与安全边界 | 服务端鉴权、权限校验、资源归属、租户隔离和敏感信息保护 |
-| `backend/40-jobs-cache-observability.md` | 后端任务缓存与可观测性 | 定时任务、队列、缓存、分布式锁、日志、指标、告警和失败终态 |
+| `enterprise/sky/backend/10-service-api-contract.md` | sky 后端接口契约与服务分层 | 服务端接口契约、DTO、Controller / Service 分层、响应结构和错误码 |
+| `enterprise/sky/backend/20-data-persistence.md` | sky 后端数据持久化与事务 | 数据库结构、Migration、SQL / ORM、事务、幂等和数据一致性 |
+| `enterprise/sky/backend/30-auth-permission-security.md` | sky 后端鉴权权限与安全边界 | 服务端鉴权、权限校验、资源归属、租户隔离和敏感信息保护 |
+| `enterprise/sky/backend/40-jobs-cache-observability.md` | sky 后端任务缓存与可观测性 | 定时任务、队列、缓存、分布式锁、日志、指标、告警和失败终态 |
+| `enterprise/sky/backend/50-multi-version-local-debug.md` | sky 多版本开发部署与本地联调 | 版本标识、本地环境变量、页面版本参数、请求头透传 |
+| `enterprise/sky/lang/java.md` | sky Java 语言规范 | 以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款 |
 | `common/80-terminal-node-model.md` | 通用终端文件 Node 模型 | 终端文件编码、Node 版本管理、模型专用规范 |
 | `common/90-terminal-command-error.md` | 通用终端同步验证与错误处理 | 终端命令执行、Vite 验证分级、AI 规则同步验证、错误处理与用户感知 |
 | `projects/skyline-kunlun-ui-main.md` | skyline-kunlun-ui-main 项目规则 | Kunlun Element Plus namespace 与运行时前缀规范 |
@@ -55,7 +60,9 @@
 | 需求读取、禁止脑补、Git、注释、格式化、终端、接口契约协作、跨端测试与发布 | `common/` | 前端、后端和其他开发任务都适用 |
 | JS/TS、Java 等语言层写法（注释、类型、相等运算、枚举分支、函数抽象、命名） | `lang/` | 约束语言本身，与端无关；按项目事实语言选择 js-ts.md / java.md |
 | Vue、组件、Hook、SCSS、UI、路由、i18n、Icon、浏览器交互 | `frontend/` | 约束前端页面、组件、样式和用户界面 |
-| Controller、Service、DTO、数据库、事务、鉴权、缓存、队列、日志、安全 | `backend/` | 约束服务端实现、数据持久化和运行时边界 |
+| 个人后端规则 | `backend/` | 不归属任何企业，且前后端个人规则都适用的后端约束 |
+| sky 后端、sky Java、sky 多版本本地联调 | `enterprise/sky/` | 来源是 sky 企业规范；先读 `enterprise/sky/README.md` |
+| 新增其他企业规范 | `enterprise/<企业标识>/` | 先读 `enterprise/README.md`，禁止写入个人规则目录 |
 | 项目专属补充 | `projects/*.md` | 只服务某个项目，不应污染通用规则 |
 | 具体工作步骤 | `workflows/base.*.md` 或 `workflows/kl.*.md` | 更像流程，不是单条规则 |
 
@@ -63,7 +70,7 @@
 
 规则按来源分两类：
 
-- **企业规范**：来自 sky 企业后端文档，覆盖 `rules/backend/` 全部文件和 `rules/lang/java.md` 默认口径，文件头部标注 `来源`。
+- **企业规范**：放在 `rules/enterprise/<企业标识>/`。当前 sky 覆盖 `enterprise/sky/backend/` 和 `enterprise/sky/lang/java.md`，维护入口是 `enterprise/sky/README.md`。
 - **个人意向**：未标注来源的规则均为个人沉淀；后续新增规则未强调企业规范时，默认按个人意向收录。
 
 冲突时优先级：**用户最新确认 > 企业规范 > 个人意向**；个人意向只补企业规范的空白，不覆盖企业口径。冲突发生时必须在交付中显性说明冲突点、双方口径和实际执行依据。
@@ -90,7 +97,7 @@
 
 只有新增主题足够稳定、现有文件无法承载时，才新增规则文件。
 
-1. 在 `common/`、`lang/`、`frontend/`、`backend/` 或 `projects/` 下创建语义化文件名。
+1. 在 `common/`、`lang/`、`frontend/`、`backend/`、`projects/` 或 `enterprise/<企业标识>/` 下创建语义化文件名。新增企业时先补企业 README。
 2. 在 `rules/rules-manifest.json` 中加入新文件，并放到正确拼接顺序。
 3. 在本文件的“规则文件索引”和“新增规则归属”中补充入口。
 4. 更新根目录 `AGENTS.md`，如果新增了新的先读场景或目录职责。

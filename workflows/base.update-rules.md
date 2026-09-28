@@ -105,7 +105,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 | 类型 | sky-rules 仓库中的源文件 | 同步目标 | 判断标准 |
 |------|---------------------------|---------|--------|
-| 全局规则（默认） | `rules/rules-manifest.json` 拼接的 `rules/global-rules.md`、`rules/common/*.md`、`rules/frontend/*.md`、`rules/backend/*.md`、`rules/projects/*.md` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 按通用 / 前端 / 后端 / 项目专属分类维护 |
+| 全局规则（默认） | `rules/rules-manifest.json` 拼接的个人规则与 `rules/enterprise/<企业标识>/` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md` | 个人规则按通用 / 前端 / 后端 / 项目分类；企业规范按企业目录维护 |
 | 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Codex Skills: `~/.codex/skills/*` | 跨项目通用的工作流程 |
 | 工具工作流 | `workflows/tool.*.md` | 同上 | 可跨项目复用的工具配置、接入和排障流程 |
 | More-Tool 项目工作流 | `workflows/more-tool.*.md` | 同上 | 仅服务 More-Tool 项目，不作为通用工具命名 |
@@ -145,7 +145,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 1. 先读 `rules/README.md`，根据“规则文件索引”和“新增规则归属”确定候选文件。
 2. 再读 `rules/rules-manifest.json`，确认候选文件在拼接清单中，且同步顺序合理。
 3. 搜索候选文件和相邻主题文件，确认是否已有类似规则。
-4. 判断适用对象：前后端都适用的规则进入 `rules/common/`；约束 Vue、组件、Hook、SCSS、UI、路由、i18n、Icon、浏览器交互的规则进入 `rules/frontend/`；约束 Controller、Service、DTO、数据库、事务、鉴权、安全、缓存、队列、日志的规则进入 `rules/backend/`。
+4. 判断适用对象：前后端都适用的个人规则进入 `rules/common/`；约束 Vue、组件、Hook、SCSS、UI、路由、i18n、Icon、浏览器交互的个人规则进入 `rules/frontend/`；不归属企业的后端个人规则进入 `rules/backend/`。sky 后端、sky Java 和 sky 多版本规则进入 `rules/enterprise/sky/`；其他企业进入 `rules/enterprise/<企业标识>/`。新增企业前先读 `rules/enterprise/README.md`。
 5. 只有当规则属于 P0 红线、规则读取策略、场景索引或示例总体要求时，才修改 `rules/global-rules.md`。
 6. 如果现有文件无法承载新增主题，先向用户预览新增文件名、放置目录、manifest 插入位置和 README 索引更新内容，确认后再写入。
 

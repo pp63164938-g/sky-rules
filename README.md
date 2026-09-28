@@ -14,7 +14,8 @@ sky-rules/
 │   ├── global-rules.md    # 常驻入口：P0 红线、场景索引、读取策略
 │   ├── common/            # 前后端通用规则
 │   ├── frontend/          # 前端专属规则
-│   ├── backend/           # 后端专属规则
+│   ├── backend/           # 个人后端规则
+│   ├── enterprise/        # 企业规范，一家企业一个目录
 │   └── projects/          # 项目专属规则
 ├── workflows/              # 工作流文件（所有编辑器共享）
 │   ├── README.md          # 工作流维护索引
@@ -62,11 +63,11 @@ sky-rules/
 | `workflows/README.md` | 人 / AI | 工作流维护索引，说明工作流命名、归属、结构和扩展标准 |
 | `scripts/check-rules.py` | 人 / AI | 规则仓库自检入口，检查 manifest、README 索引、拼接结果和同步产物 |
 
-新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。全局规则细则按适用对象拆在 `rules/common/`、`rules/frontend/`、`rules/backend/`、`rules/projects/` 中，并由 `rules/rules-manifest.json` 统一拼接；入口文件只做索引和流程说明。
+新增规则或工作流时，优先读取 `AGENTS.md`，再按场景读取 `rules/README.md` 或 `workflows/README.md`。个人规则按适用对象拆在 `rules/common/`、`rules/lang/`、`rules/frontend/`、`rules/backend/`、`rules/projects/` 中；企业规范放在 `rules/enterprise/<企业标识>/`。所有实际拼接文件由 `rules/rules-manifest.json` 统一登记；入口文件只做索引和流程说明。
 
 ### 全局规则拼接说明
 
-`rules/rules-manifest.json` 是**所有编辑器共用的全局规则拼接清单**。同步脚本会按清单顺序读取 `rules/global-rules.md`、`rules/common/*.md`、`rules/frontend/*.md`、`rules/backend/*.md`、`rules/projects/*.md`，生成各编辑器实际读取的完整全局规则。
+`rules/rules-manifest.json` 是**所有编辑器共用的全局规则拼接清单**。同步脚本会按清单顺序读取 `rules/global-rules.md` 和清单中的个人规则、企业规范，生成各编辑器实际读取的完整全局规则。企业规范的维护入口是 `rules/enterprise/README.md`。
 
 `rules/global-rules.md` 只保留常驻入口内容，例如 P0 红线、场景索引和读取策略。具体规则细节放到对应拆分文件中，便于 AI 和人按主题查找。
 
