@@ -85,6 +85,11 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 3. 同一事项既是通用红线，又改变某个工作流的执行顺序时，规则写不变量，工作流写本流程怎么执行。禁止两处各写一套不同口径。
 4. 用户没指定归属时，必须在预览里说明判断结果和没选另一处的原因。不能等用户想起 skill 名称再补。
 5. 归属不确定，且两种写法会改变后续执行结果时，先问用户。已有唯一归属时直接写入预览，不额外确认。
+6. 写入 Java 或 sky 规则前，先按来源分流，禁止只因为“当前是 Java”或“当前是 sky 项目”选文件：
+   - 企业文档原文进 `rules/enterprise/sky/` 对应主题文件。Java 原文只进 `lang/java.md`。
+   - 开发 sky 项目时总结、企业文档没写的写法，进 `rules/enterprise/sky/practice/`。Java 实践进 `practice/java.md`。
+   - 不限定 sky、其他企业也能用的个人写法，进 `rules/lang/`、`rules/backend/` 或 `rules/frontend/`。
+   - 禁止把实践总结写进企业原文文件，也禁止写进尚未存在的 `rules/lang/java.md` 来代替 `practice/`。
 
 **落点必须单独可见**：
 

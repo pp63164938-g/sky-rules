@@ -43,7 +43,8 @@
 | `enterprise/sky/backend/30-auth-permission-security.md` | sky 后端鉴权权限与安全边界 | 服务端鉴权、权限校验、资源归属、租户隔离和敏感信息保护 |
 | `enterprise/sky/backend/40-jobs-cache-observability.md` | sky 后端任务缓存与可观测性 | 定时任务、队列、缓存、分布式锁、日志、指标、告警和失败终态 |
 | `enterprise/sky/backend/50-multi-version-local-debug.md` | sky 多版本开发部署与本地联调 | 版本标识、本地环境变量、页面版本参数、请求头透传 |
-| `enterprise/sky/lang/java.md` | sky Java 语言规范 | 以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款 |
+| `enterprise/sky/lang/java.md` | sky Java 企业原文 | 只收录 sky 企业后端文档原文，不收开发总结 |
+| `enterprise/sky/practice/java.md` | sky Java 实践总结 | 开发 sky Java 项目时总结、企业文档未写的写法 |
 | `common/80-terminal-node-model.md` | 通用终端文件 Node 模型 | 终端文件编码、Node 版本管理、模型专用规范 |
 | `common/90-terminal-command-error.md` | 通用终端同步验证与错误处理 | 终端命令执行、Vite 验证分级、AI 规则同步验证、错误处理与用户感知 |
 | `projects/skyline-kunlun-ui-main.md` | skyline-kunlun-ui-main 项目规则 | Kunlun Element Plus namespace 与运行时前缀规范 |
@@ -58,10 +59,12 @@
 | --- | --- | --- |
 | P0 红线、规则读取策略、场景索引 | `global-rules.md` | 需要所有任务第一时间看到，且不读细则也不能违反 |
 | 需求读取、禁止脑补、Git、注释、格式化、终端、接口契约协作、跨端测试与发布 | `common/` | 前端、后端和其他开发任务都适用 |
-| JS/TS、Java 等语言层写法（注释、类型、相等运算、枚举分支、函数抽象、命名） | `lang/` | 约束语言本身，与端无关；按项目事实语言选择 js-ts.md / java.md |
+| 不限定企业的 JS/TS、Java 语言层写法 | `lang/` | 个人通用写法。sky 项目里总结的 Java 写法不放这里 |
+| sky 企业文档原文 | `enterprise/sky/` 对应主题文件 | 来源是企业文档。Java 原文只进 `enterprise/sky/lang/java.md` |
+| 开发 sky 项目时总结的写法 | `enterprise/sky/practice/` | 企业文档没写、当前又在做 sky 项目。Java 进 `practice/java.md` |
 | Vue、组件、Hook、SCSS、UI、路由、i18n、Icon、浏览器交互 | `frontend/` | 约束前端页面、组件、样式和用户界面 |
 | 个人后端规则 | `backend/` | 不归属任何企业，且前后端个人规则都适用的后端约束 |
-| sky 后端、sky Java、sky 多版本本地联调 | `enterprise/sky/` | 来源是 sky 企业规范；先读 `enterprise/sky/README.md` |
+| sky 后端、sky 多版本本地联调 | `enterprise/sky/backend/` | 来源是 sky 企业规范；先读 `enterprise/sky/README.md` |
 | 新增其他企业规范 | `enterprise/<企业标识>/` | 先读 `enterprise/README.md`，禁止写入个人规则目录 |
 | 项目专属补充 | `projects/*.md` | 只服务某个项目，不应污染通用规则 |
 | 具体工作步骤 | `workflows/base.*.md` 或 `workflows/kl.*.md` | 更像流程，不是单条规则 |

@@ -37,7 +37,7 @@
 | `rules/frontend/` | 前端专属规则，例如组件类型、样式、路由、i18n、Icon、Vue 文件头 |
 | `rules/backend/` | 个人后端规则。sky 后端规范不放这里 |
 | `rules/enterprise/` | 企业规范目录。一家企业一个子目录，新增企业先读 `rules/enterprise/README.md` |
-| `rules/enterprise/sky/` | sky 企业规范，包含后端规范、Java 语言规范和多版本本地联调 |
+| `rules/enterprise/sky/` | sky 企业规范。`lang/`、`backend/` 只放企业原文；`practice/` 放开发该企业项目时总结、企业文档未写的写法 |
 | `rules/projects/` | 项目专属规则，只放特定项目需要遵守的补充规则 |
 | `workflows/README.md` | 工作流维护索引，说明命名、归属、扩展标准 |
 | `workflows/*.md` | 各场景工作流源文件，会同步为 Windsurf / Antigravity 工作流和 Codex Skills |

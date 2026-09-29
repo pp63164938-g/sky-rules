@@ -18,12 +18,15 @@
 | `backend/30-auth-permission-security.md` | 鉴权、权限与安全边界 |
 | `backend/40-jobs-cache-observability.md` | 任务、缓存与可观测性 |
 | `backend/50-multi-version-local-debug.md` | 多版本开发部署与本地联调 |
-| `lang/java.md` | Java 语言规范。原文未到位的部分仍是待核对骨架 |
+| `lang/java.md` | Java 语言规范。只收录企业文档原文；原文未到位的部分仍是待核对骨架 |
+| `practice/java.md` | 开发 sky Java 项目时总结的写法。不是企业原文，不覆盖 `lang/java.md` |
 
 ## 维护方式
 
-1. 新增 sky 规范时，先判断是后端、前端、语言层还是其他主题，放到本目录对应子目录。
-2. Java 规范默认归本目录的 `lang/java.md`，不要再放回 `rules/lang/`。
-3. 多版本、发布、运行时隔离等 sky 专属内容归本目录，不要写入个人 `rules/backend/`。
-4. 新增或移动文件后，同步更新 `rules/rules-manifest.json`、`rules/README.md` 和 `scripts/check-rules.py` 的 sky 文件清单。
-5. 原始文档与本目录摘录冲突时，先报告冲突，不以摘录覆盖原始文档。
+1. 新增 sky 规范时，先判断来源，再判断主题。
+2. 企业文档原文进对应主题文件。Java 原文只进 `lang/java.md`。
+3. 开发 sky 项目时总结、企业文档没写的写法，进 `practice/` 同主题文件。Java 实践进 `practice/java.md`。
+4. 不限定 sky、其他企业也能用的个人写法，进 `rules/lang/`、`rules/backend/` 或 `rules/frontend/`。禁止借企业原文文件暂存。
+5. 多版本、发布、运行时隔离等 sky 专属内容归本目录，不要写入个人 `rules/backend/`。
+6. 新增或移动文件后，同步更新 `rules/rules-manifest.json` 和 `rules/README.md`。`scripts/check-rules.py` 没有写死 sky 文件清单时，不必只为新增 practice 文件改脚本。
+7. 原始文档与本目录摘录冲突时，先报告冲突，不以摘录覆盖原始文档。实践总结与企业原文冲突时同样不覆盖原文。

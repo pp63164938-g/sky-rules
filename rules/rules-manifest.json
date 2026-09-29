@@ -104,7 +104,12 @@
     {
       "path": "enterprise/sky/lang/java.md",
       "title": "Java 语言规范",
-      "description": "以 sky 企业后端文档为准；当前为空骨架，仅含防混淆条款"
+      "description": "只收录 sky 企业后端文档原文，不收开发总结"
+    },
+    {
+      "path": "enterprise/sky/practice/java.md",
+      "title": "sky Java 实践总结",
+      "description": "开发 sky Java 项目时总结、企业文档未写的写法"
     },
     {
       "path": "common/80-terminal-node-model.md",

@@ -3,7 +3,7 @@
 > **归属维度**：语言层规则。约束 Java 语言本身的写法，与端无关。
 > **生效条件**：当前项目事实语言为 Java 时生效。判定依据：项目存在 `pom.xml` / `build.gradle` / project-catalog.json 登记。
 > **来源**：默认以 sky 企业后端文档为准。归属 `rules/enterprise/sky/lang/java.md`。
-> **边界**：sky 的 Java 语言层规则只收录在本文件；sky 的接口契约、持久化、鉴权等端规则在 `rules/enterprise/sky/backend/`，禁止混淆。个人语言规则仍在 `rules/lang/`。
+> **边界**：本文件只收录 sky 企业后端文档原文。sky 项目开发中总结、企业文档未写的 Java 写法，放 `rules/enterprise/sky/practice/java.md`，禁止写进本文件。个人通用 Java 写法仍放 `rules/lang/java.md`；该文件不存在时先新建并登记 manifest，禁止借本文件暂存。
 
 ## 防混淆条款
 
