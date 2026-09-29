@@ -804,6 +804,9 @@ function getFilteredItems(type, items) {
 - 只有业务本身明确是“排除某类后的全部剩余情况”，或需求 / 接口文档明确写明“除 X 外均按 Y 处理”时，才允许使用取反判断；代码附近必须写明依据和影响范围。
 - 枚举值未确认时，禁止通过反向判断绕过缺失枚举；必须先确认真实 value，或用 `TODO待联调_值_用途描述` 标记后再做正向判断。
 - 多个明确类型共享同一逻辑时，优先使用正向集合表达命中范围；多处复用或属于稳定业务协议时抽成有业务语义的常量集合，单次局部判断可直接内联集合。后续新增枚举时只扩展集合，禁止让新增枚举自动落入旧的取反逻辑。
+- **早退判断同样受约束**：`if (条件) return`、`if (条件) continue`、`if (条件) throw` 是取反判断最常见的藏身处。当函数真实业务意图是“满足某条件时执行某动作”，禁止写成“不满足该条件就提前返回”。取反早退只适用于真正的排除语义或结构性防御，不适用于表达单一命中条件。
+- **取反形态不限于函数和运算符**：`!==`、`!isXxx`、`!value`、`?.length !== N`、`!array.includes(x)`、`Object.keys(x).length !== N` 都属于取反表达。判断是否违规看语义方向——条件表达的是“命中”还是“排除”，而不是看用了哪个运算符或工具函数。
+- **交付前必须按 diff 审计取反判断**：本次改动完成后，必须在修改文件中定向搜索 `!==`、`!isXxx`、`!value`、`?.length !==`、`if (!` 开头的早退。逐条确认它表达的是排除语义或结构性防御；如果实际意图是“命中某条件才做某事”，必须改为正向。无法改正向时，须在代码附近写明排除依据。
 
 ```javascript
 // ❌ 禁止 - 用“非 C”偷懒覆盖 A/B，未来新增 D 会误入旧逻辑
@@ -829,6 +832,29 @@ if (source === TARGET_SOURCE) {
     refreshList()
 }
 ```
+
+```javascript
+// ❌ 禁止 - 业务意图是“候选唯一时才赋值”，却写成“不等于 1 就返回”
+function syncXxxDefault() {
+    const optionList = getXxxOptionList()
+
+    if (optionList?.length !== 1) return
+
+    return setXxx(optionList[0].id)
+}
+
+// ✅ 正确 - 条件方向与业务意图一致；其余情况自然不赋值，无需额外 return
+function syncXxxDefault() {
+    const optionList = getXxxOptionList()
+
+    // 候选唯一时才自动赋值，其余情况留空由用户处理。
+    if (optionList?.length === 1) {
+        return setXxx(optionList[0].id)
+    }
+}
+```
+
+`optionList?.length !== 1` 会把“0 个”和“多个”两种不同业务语义合并成一个分支；正向写法保留了后续给这两种情况分别加处理的空间。
 
 ```javascript
 // ❌ 禁止 - 只写一个明确分支，其余全部默认处理
