@@ -729,6 +729,10 @@ return null
 
 **目的**：减少嵌套层级，提高可读性，新增分支时只需在末尾 `return` 前插入新的 `if` 块。
 
+**最终 `return` 只做兜底**：函数末尾的最终 `return` 只承接“前面所有已知分支都没命中”的情况，例如未知值、异常值、非目标场景。每一个已知业务结果都必须有自己的 `if`，不能因为“当前只剩这一种情况”就省掉判断，直接放到最后返回。最终 `return` 前必须写注释，说明它兜的是什么。
+
+**唯一例外：绝对的永久二元**：条件在逻辑上必然互补、不可能出现第三种结果时，才允许 `if (条件) return 结果A` 后直接 `return 结果B`，例如布尔值的真 / 假、两个值的相等 / 不相等。“当前只有两个枚举值”“当前只有两种模块 / 来源 / 状态”“目前只看到两种返回”都不属于永久二元，必须逐个 `if` 判断后再写兜底 `return`。无法证明是绝对二元时，一律按非二元处理。
+
 ## 相等运算符选择规范
 
 **核心原则**：JavaScript / TypeScript 默认使用 `===` 和 `!==`。`==`、`!=` 只有在明确需要抽象相等语义时才允许使用，禁止用宽松比较掩盖类型不确定。
@@ -776,22 +780,59 @@ function getFilteredItems(type, items) {
 
 // ✅ 推荐 - 扁平 if + 最后 return
 function getFilteredItems(type, items) {
+  // 业务类型 a：只保留目标父级下的条目
   if (type === "a") {
     return items.filter((item) => item.parentId === 1);
   }
+  // 业务类型 b：只保留目标值条目
   if (type === "b") {
     return items.filter((item) => item.value === 2);
   }
-  // 其他场景：返回全部
+  // 未识别类型（兜底）：不做过滤，返回全部
   return items;
+}
+```
+
+```javascript
+// ❌ 禁止 - 已知结果 B 没有判断，直接当成最终 return
+function getXxxResult(type) {
+    if (type === TYPE_A) {
+        return handleA()
+    }
+    return handleB()
+}
+
+// ✅ 正确 - 已知结果逐个判断，最终 return 只兜未知值
+function getXxxResult(type) {
+    // 业务类型 A：xxx
+    if (type === TYPE_A) {
+        return handleA()
+    }
+    // 业务类型 B：xxx
+    if (type === TYPE_B) {
+        return handleB()
+    }
+    // 未识别类型：不套用任何已知处理
+    return undefined
+}
+
+// ✅ 允许 - 绝对的永久二元：相等 / 不相等必然互补
+function getXxxAction(targetName, currentName) {
+    // 目标与当前一致：直接进入
+    if (targetName === currentName) return 'pass'
+    // 目标与当前不一致：改道到目标
+    return 'redirect'
 }
 ```
 
 **判断标准**：
 
 - 每个分支独立判断，用 `if` + 提前 `return` 处理
-- 默认行为放在函数/回调末尾作为最终 `return`
-- 新增场景时只需在末尾 `return` 前插入新的 `if` 块，无需修改已有分支
+- 每个已知业务结果都有自己的 `if` 和过程注释
+- 最终 `return` 只承接未命中所有已知分支的情况，并写明兜底含义
+- 删除最终 `return` 前的任一 `if` 后，最终 `return` 不应变成“替那个分支干活”
+- 只有绝对的永久二元可以省略第二个 `if`；无法证明时一律补齐
+- 新增场景时只需在最终 `return` 前插入新的 `if` 块，兜底不需要改
 
 ## 明确分支优先规范
 
@@ -807,6 +848,7 @@ function getFilteredItems(type, items) {
 - **早退判断同样受约束**：`if (条件) return`、`if (条件) continue`、`if (条件) throw` 是取反判断最常见的藏身处。当函数真实业务意图是“满足某条件时执行某动作”，禁止写成“不满足该条件就提前返回”。取反早退只适用于真正的排除语义或结构性防御，不适用于表达单一命中条件。
 - **取反形态不限于函数和运算符**：`!==`、`!isXxx`、`!value`、`?.length !== N`、`!array.includes(x)`、`Object.keys(x).length !== N` 都属于取反表达。判断是否违规看语义方向——条件表达的是“命中”还是“排除”，而不是看用了哪个运算符或工具函数。
 - **交付前必须按 diff 审计取反判断**：本次改动完成后，必须在修改文件中定向搜索 `!==`、`!isXxx`、`!value`、`?.length !==`、`if (!` 开头的早退。逐条确认它表达的是排除语义或结构性防御；如果实际意图是“命中某条件才做某事”，必须改为正向。无法改正向时，须在代码附近写明排除依据。
+- **交付前必须审计最终 `return`**：逐个检查本次改动中，含 `if` 提前返回的函数末尾的无条件 `return`。它返回的如果是某个具体业务结果（放行、某个已知类型的处理、某个已知页面），说明这个结果没有单独判断，要补上对应的 `if`，让最终 `return` 回到兜底的位置。只有条件属于绝对的永久二元时才可保留，并在最终 `return` 前注释说明它是互补结果。
 
 ```javascript
 // ❌ 禁止 - 用“非 C”偷懒覆盖 A/B，未来新增 D 会误入旧逻辑
