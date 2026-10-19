@@ -25,6 +25,8 @@
 - 卡片、详情、弹窗只读区、下拉选项和自定义列中长度不确定的接口文本，优先使用 `sky-ellipsis-tooltip`；单行默认省略，需求明确多行摘要时设置 `line-clamp`。
 - 普通表格文本列已经由组件处理溢出时不重复包裹；静态短文案、按钮文案和已有明确截断能力的组件也不机械增加 Tooltip。
 - 当前项目纯文本空值展示优先使用 `@/utils/utils-common` 的 `formatEmptyValue`；业务空值判断使用同方向的 `isBlank` / `isNotBlank`。使用前确认当前实现仍保留 `0`、`false` 等有效值。
+- 判空唯一入口：PC（`skyline-kunlun-ui-main`）与移动端（`skyline-kunlun-ui-mobile`）均为 `@/utils/utils-common` 的 `isBlank` / `isNotBlank`，带类型谓词，空白值为 `''`、`null`、`undefined`。新代码禁止直接使用 `class-validator` 的 `isEmpty` / `isNotEmpty` 判空（返回 `boolean`，不收窄），也禁止使用 `utils-common` 历史 `isEmpty`、`src/packages/utils/utils-is.ts` 的 `isEmpty`。存量调用不追溯替换。
+- 事实来源为两端 `src/utils/utils-common.tsx` 的函数签名；任一端缺少该函数或签名不再带类型谓词时，停止套用本条并回到规则仓库更新。
 - `formatEmptyValue` 只用于展示，不参与表单初始化、查询参数、提交或业务分支；普通表格列已有统一空值处理时不重复格式化。
 - 禁止在业务页面重复声明 `formatText`、`formatEmptyText` 或使用 `value || '-'` 掩盖有效的 `0`、`false`。
 
