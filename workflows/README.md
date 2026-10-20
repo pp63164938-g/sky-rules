@@ -9,11 +9,10 @@
 | `base.*.md` | 跨项目通用工作流 | `base.docs.md`、`base.update-rules.md` |
 | `kl.*.md` | Kunlun 项目专属工作流 | `kl.gen-page.md`、`kl.menu-manage.md` |
 | `tool.*.md` | 可跨项目复用的工具配置、接入和排障工作流 | `tool.ccswitch.md` |
-| `more-tool.*.md` | More-Tool 项目专属工作流或指针 | `more-tool.commit-and-sync-skill.md` |
 
 同步到 Codex Skills 时，文件名中的 `.` 会转换为 `-`，例如 `base.update-rules.md` 对应 `base-update-rules`。
 
-一般工具工作流统一使用 `tool.*.md`；`more-tool.*.md` 只表示现有 More-Tool 项目归属，不作为“更多工具”的通用前缀，也不要求批量重命名已有文件。
+项目专属 skill 留在对应项目，不在本仓库按项目名前缀维护。
 
 ## 新增还是补充
 
