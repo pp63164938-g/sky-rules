@@ -771,6 +771,8 @@ def check_generated_outputs() -> None:
             cwd=ROOT,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
