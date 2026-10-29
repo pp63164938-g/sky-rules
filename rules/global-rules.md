@@ -33,7 +33,7 @@ alwaysApply: true
 | 项目路径 / 项目上下文定位 | `base-project-context` |
 | 需求文档定位 / 产品需求读取 | `base-project-context`、`base-docs` |
 | 接口查询 / 文档确认 | `base-docs`、`联调开发规范` |
-| 前后端联调 / Mock 替换 | `base-debugging`、`静态接口开发规范`、`联调开发规范` |
+| 前后端联调 / Mock 替换 | `base-debugging`、`静态接口开发规范`、`联调开发规范`、注释规范「非需求文档口径必须可找回」 |
 | 前端页面 / 组件 / 样式 / i18n / Icon | `rules/frontend/` 对应规则、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
 | 后端接口实现 / 数据库 / 鉴权 / 任务缓存 | `rules/enterprise/sky/backend/` 对应规则、`后端接口契约与服务分层规范`、`后端数据持久化与事务规范` |
 | 多版本本地联调 / 灰度版本隔离 | `rules/enterprise/sky/backend/50-multi-version-local-debug.md`、`base-run-dev`、`kl-gen-page` |
