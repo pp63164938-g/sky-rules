@@ -477,6 +477,7 @@ def check_index_files(entries: list[dict[str, str]]) -> None:
         "rules/enterprise/",
         "assembled_rules",
         "codex_rules",
+        "dsh_rules",
         "scripts/check-rules.py",
         "project-catalog.json",
         "workflows/references/",
@@ -705,6 +706,7 @@ def check_sync_script() -> None:
         "CHECK_RULES_SCRIPT",
         "assembled_rules",
         "codex_rules",
+        "dsh_rules",
         "build_rules_content",
         "run_rules_check",
         "PROJECT_CATALOG_FILE",
@@ -756,7 +758,7 @@ def check_sync_targets_example() -> None:
                 STATE.fail(f"sync-targets.example.json targets[{index}].{key} 不能为空")
 
         mode = raw_target.get("mode")
-        if mode not in {"mirror", "file", "assembled_rules", "codex_rules", "agents_skills"}:
+        if mode not in {"mirror", "file", "assembled_rules", "codex_rules", "dsh_rules", "agents_skills"}:
             STATE.fail(f"sync-targets.example.json targets[{index}] mode 不支持: {mode}")
 
     if len(STATE.failures) == failure_count:

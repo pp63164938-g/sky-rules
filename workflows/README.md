@@ -1,6 +1,6 @@
 # 工作流维护索引
 
-`workflows/` 用于维护可被多种 AI 工具复用的场景化流程。同步脚本会把这些 Markdown 文件同步为 Windsurf / Antigravity 工作流，并转换为 Codex Skills。
+`workflows/` 用于维护可被多种 AI 工具复用的场景化流程。同步脚本会把这些 Markdown 文件同步为 Windsurf / Antigravity 工作流，并转换为 Codex、Claude Code 和 DeepSeek Harness Skills。
 
 ## 命名规则
 
@@ -10,7 +10,7 @@
 | `kl.*.md` | Kunlun 项目专属工作流 | `kl.gen-page.md`、`kl.menu-manage.md` |
 | `tool.*.md` | 可跨项目复用的工具配置、接入和排障工作流 | `tool.ccswitch.md` |
 
-同步到 Codex Skills 时，文件名中的 `.` 会转换为 `-`，例如 `base.update-rules.md` 对应 `base-update-rules`。
+同步到 Codex、Claude Code 和 DeepSeek Harness Skills 时，文件名中的 `.` 会转换为 `-`，例如 `base.update-rules.md` 对应 `base-update-rules`。
 
 项目专属 skill 留在对应项目，不在本仓库按项目名前缀维护。
 
@@ -92,7 +92,7 @@ allow_implicit_invocation: false
 - 工作流中的规则如果具有跨场景通用性，应同步沉淀到 `rules/global-rules.md`。
 - 新增工作流后必须更新本文件的命名或索引说明。
 - 工作流中的示例必须抽象化，禁止复制真实业务接口、路径、权限标识和生产数据。
-- 修改工作流后必须执行 `python3 sync-workflows.py --no-git`，确认 Codex Skills 已重新生成。
+- 修改工作流后必须执行 `python3 sync-workflows.py --no-git`，确认 Codex、Claude Code 和 DeepSeek Harness Skills 已重新生成。
 
 ## 常见归属
 

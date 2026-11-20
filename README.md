@@ -78,6 +78,7 @@ sky-rules/
 | Windsurf | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 要求的固定文件名 |
 | Codex | `~/.codex/AGENTS.md` | Codex 用户级全局规则 |
 | Claude Code | `~/.claude/CLAUDE.md` | Claude Code 用户级全局规则（经 `sync-targets.json` 接入） |
+| DeepSeek Harness | `~/.dsh/AGENTS.md` | DSH 用户全局规则入口（经 `sync-targets.json` 接入；只保留可完整读取的入口和细则定位，不复制完整拼接结果） |
 
 > 修改规则时应先通过 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标源文件；新增规则文件后必须更新 manifest，运行同步脚本后各编辑器自动生效。
 
@@ -116,6 +117,7 @@ sky-rules/
 | `workflows/*.md` | `~/.gemini/antigravity/global_workflows/` | Antigravity 工作流 |
 | `workflows/*.md` | `~/.codex/skills/` | Codex Skills |
 | `workflows/*.md` | `~/.claude/skills/` | Claude Code Skills（经 `sync-targets.json` 接入） |
+| `workflows/*.md` | `~/.dsh/skills/` | DeepSeek Harness Skills（经 `sync-targets.json` 接入） |
 | `workflows/references/*.md` | 普通工作流目录或对应 Codex Skill 的 `references/` | 按 `<skill-name>--<topic>.md` 归属并按需读取的引用资源 |
 | `project-catalog.json` | 所有启用平台的 `base-project-context` 工作流或 Skill 同目录 | 项目上下文工作流伴随资源；内容必须与唯一源文件一致 |
 | `rules/rules-manifest.json` | `~/.gemini/GEMINI.md` | Antigravity 全局规则（按 manifest 拼接） |
@@ -221,6 +223,8 @@ python sync-workflows.py --no-git
 | Codex Skills | `~/.codex/skills/` |
 | Claude Code 全局规则 | `~/.claude/CLAUDE.md`（经 `sync-targets.json` 接入，可用 `SKY_RULES_CLAUDE_RULES_FILE` 覆盖） |
 | Claude Code Skills | `~/.claude/skills/`（经 `sync-targets.json` 接入，可用 `SKY_RULES_CLAUDE_SKILLS_DIR` 覆盖） |
+| DeepSeek Harness 全局规则 | `~/.dsh/AGENTS.md`（经 `sync-targets.json` 接入，可用 `SKY_RULES_DSH_RULES_FILE` 覆盖；`$DSH_HOME` 非默认时设为 `$DSH_HOME/AGENTS.md`） |
+| DeepSeek Harness Skills | `~/.dsh/skills/`（经 `sync-targets.json` 接入，可用 `SKY_RULES_DSH_SKILLS_DIR` 覆盖；`$DSH_HOME` 非默认时同步跟随该目录下的 `skills/`） |
 
 如果某台电脑的目录不同，不要修改 `sync-workflows.py`，优先配置环境变量：
 
@@ -237,6 +241,8 @@ python sync-workflows.py --no-git
 | `SKY_RULES_CODEX_AGENTS_FILE` | 精确覆盖 Codex `AGENTS.md` 文件 |
 | `SKY_RULES_CODEX_SKILLS_DIR` | 精确覆盖 Codex Skills 目录 |
 | `SKY_RULES_AGENTS_SKILLS_DIR` | 兼容早期 Agents/Codex Skills 目录覆盖 |
+| `SKY_RULES_DSH_RULES_FILE` | 精确覆盖 DeepSeek Harness 全局规则文件；`$DSH_HOME` 非 `~/.dsh` 时设为 `$DSH_HOME/AGENTS.md` |
+| `SKY_RULES_DSH_SKILLS_DIR` | 精确覆盖 DeepSeek Harness Skills 目录；`$DSH_HOME` 非 `~/.dsh` 时设为 `$DSH_HOME/skills` |
 
 兼容优先级：
 
@@ -319,7 +325,7 @@ python sync-workflows.py --no-git
 | 字段 | 说明 |
 |------|------|
 | `name` | 体检和同步输出中展示的目标名称 |
-| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`assembled_rules` 按 manifest 拼接规则文件、`codex_rules` 按 manifest 拼接并去除 frontmatter、`agents_skills` 由工作流生成 Skill |
+| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`assembled_rules` 按 manifest 拼接规则文件、`codex_rules` 按 manifest 拼接并去除 frontmatter、`dsh_rules` 生成 DSH 可完整读取的规则入口、`agents_skills` 由工作流生成 Skill |
 | `source` | 源文件或源目录，默认相对 `sky-rules` 仓库根目录 |
 | `target` | 默认目标路径，支持 `${ROOT}`、`${HOME}`、`~` 和系统环境变量 |
 | `target_env` | 精确覆盖目标路径的环境变量名 |

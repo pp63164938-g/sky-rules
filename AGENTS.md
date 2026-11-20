@@ -40,7 +40,7 @@
 | `rules/enterprise/sky/` | sky 企业规范。`lang/`、`backend/` 只放企业原文；`practice/` 放开发该企业项目时总结、企业文档未写的写法 |
 | `rules/projects/` | 项目专属规则，只放特定项目需要遵守的补充规则 |
 | `workflows/README.md` | 工作流维护索引，说明命名、归属、扩展标准 |
-| `workflows/*.md` | 各场景工作流源文件，会同步为 Windsurf / Antigravity 工作流和 Codex Skills |
+| `workflows/*.md` | 各场景工作流源文件，会同步为 Windsurf / Antigravity 工作流，以及 Codex、Claude Code、DeepSeek Harness Skills |
 | `workflows/references/` | 长工作流按 `<skill-name>--<topic>.md` 拆分的场景引用，会同步到普通工作流或对应 Skill 的 `references/` |
 | `scripts/check-rules.py` | 规则仓库自检脚本，检查 manifest、索引、拼接结果和同步产物 |
 | `sync-workflows.py` | 同步脚本，负责把源规则和工作流同步到各 AI 工具 |
@@ -78,10 +78,10 @@ python3 scripts/check-rules.py
 
 同步后需要说明：
 
-- 全局规则是否同步到 Codex `~/.codex/AGENTS.md`、Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`。
+- 全局规则是否同步到 Codex `~/.codex/AGENTS.md`、Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`；DeepSeek Harness 是否生成可完整读取的 `~/.dsh/AGENTS.md` 入口。
 - 工作流是否同步到 Windsurf / Antigravity 工作流目录。
 - `workflows/references/` 是否按归属同步到普通工作流目录和对应 Codex Skill。
-- Codex Skills 是否生成到 `~/.codex/skills/`。
+- Codex Skills 是否生成到 `~/.codex/skills/`；Claude Code Skills 是否生成到 `~/.claude/skills/`；DeepSeek Harness Skills 是否生成到 `~/.dsh/skills/`。
 - Codex `prompt-input` 是否能看到代表性 Skills。
 - 同步脚本内置自检是否执行；`--skip-rules-check` 只能在排障时使用，正常规则变更禁止跳过。
 

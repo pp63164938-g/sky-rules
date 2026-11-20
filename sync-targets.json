@@ -17,6 +17,24 @@
       "detect": "${HOME}/.claude",
       "pattern": "*.md",
       "exclude": ["README.md"]
+    },
+    {
+      "name": "DeepSeek Harness 全局规则",
+      "mode": "dsh_rules",
+      "source": "rules/rules-manifest.json",
+      "target": "${HOME}/.dsh/AGENTS.md",
+      "target_env": "SKY_RULES_DSH_RULES_FILE",
+      "detect": "${HOME}/.dsh"
+    },
+    {
+      "name": "DeepSeek Harness Skills",
+      "mode": "agents_skills",
+      "source": "workflows",
+      "target": "${HOME}/.dsh/skills",
+      "target_env": "SKY_RULES_DSH_SKILLS_DIR",
+      "detect": "${HOME}/.dsh",
+      "pattern": "*.md",
+      "exclude": ["README.md"]
     }
   ]
 }
