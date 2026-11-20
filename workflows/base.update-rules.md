@@ -110,7 +110,7 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 
 | 类型 | sky-rules 仓库中的源文件 | 同步目标 | 判断标准 |
 |------|---------------------------|---------|--------|
-| 全局规则（默认） | `rules/rules-manifest.json` 拼接的个人规则与 `rules/enterprise/<企业标识>/` | Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md`；DeepSeek Harness: `~/.dsh/AGENTS.md`（可完整读取的入口和细则定位，不是完整副本） | 个人规则按通用 / 前端 / 后端 / 项目分类；企业规范按企业目录维护 |
+| 全局规则（默认） | `rules/rules-manifest.json` 拼接的个人规则与 `rules/enterprise/<企业标识>/` | 常驻入口（P0 红线与场景索引）→ Antigravity: `~/.gemini/GEMINI.md`；Windsurf: `~/.codeium/windsurf/memories/global_rules.md`；Codex: `~/.codex/AGENTS.md`；Claude Code: `~/.claude/CLAUDE.md`；DeepSeek Harness: `~/.dsh/AGENTS.md`；完整细则 → `base-global-rules` 技能 | 个人规则按通用 / 前端 / 后端 / 项目分类；企业规范按企业目录维护 |
 | 全局工作流 | `workflows/base.*.md` | Windsurf: `~/.codeium/windsurf/global_workflows/*.md`；Antigravity: `~/.gemini/antigravity/global_workflows/*.md`；Codex Skills: `~/.codex/skills/*`；Claude Code Skills: `~/.claude/skills/*`；DeepSeek Harness Skills: `~/.dsh/skills/*` | 跨项目通用的工作流程 |
 | 工具工作流 | `workflows/tool.*.md` | 同上 | 可跨项目复用的工具配置、接入和排障流程 |
 | 项目规则 | 项目根目录 `GEMINI.md` | 不经过 `sync-workflows.py` | 与特定项目相关 |
@@ -235,7 +235,8 @@ description: 优化/新增全局规则或工作流 - 明确规则归属位置，
 - 后续扩展其他编辑器同步目标时，优先通过 `sync-targets.json` 增加团队共享目标；仅当前电脑私有的目标写入 `sync-targets.local.json`，禁止为了新增编辑器直接改 Python 同步逻辑
 - **同步结果说明必须具体**：执行 `sync-workflows.py --no-git` 后，回复用户时不能只说“已同步到各编辑器”，必须按实际同步内容说明目标：
   - 自检结果：说明同步前 `scripts/check-rules.py --source-only` 和同步后 `scripts/check-rules.py` 是否通过，若有 WARN 必须列出警告含义
-  - 全局规则：按 `rules/rules-manifest.json` 拼接后，同步到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`；DeepSeek Harness 生成可完整读取的 `~/.dsh/AGENTS.md` 入口，不复制完整拼接结果
+  - 全局规则：各编辑器常驻文件只同步 `rules/global-rules.md` 的常驻入口（核心理念、P0 红线、场景索引），落到 Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、Codex `~/.codex/AGENTS.md`、Claude Code `~/.claude/CLAUDE.md`、DeepSeek Harness `~/.dsh/AGENTS.md`
+  - 全局规则调用：`base-global-rules` 技能生成到 Codex `~/.codex/skills/`、Claude Code `~/.claude/skills/`、DeepSeek Harness `~/.dsh/skills/`，以及 Windsurf / Antigravity 的全局工作流目录；完整细则通过它按需加载，不再整份拼接进常驻文件
   - 工作流：同步到 Windsurf `~/.codeium/windsurf/global_workflows/`、Antigravity `~/.gemini/antigravity/global_workflows/`
   - Skills：由 workflows 生成到 Codex `~/.codex/skills/`、Claude Code `~/.claude/skills/`、DeepSeek Harness `~/.dsh/skills/`
   - Codex 验证：必须说明 `AGENTS.md` 落盘、Skills 落盘数量，以及 `prompt-input` 是否可见代表性 Skills

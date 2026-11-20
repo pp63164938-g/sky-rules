@@ -74,11 +74,23 @@ sky-rules/
 
 | 编辑器 | 同步后的文件路径 | 说明 |
 |--------|-----------------|------|
-| Antigravity | `~/.gemini/GEMINI.md` | Gemini CLI 要求的固定文件名 |
-| Windsurf | `~/.codeium/windsurf/memories/global_rules.md` | Windsurf 要求的固定文件名 |
-| Codex | `~/.codex/AGENTS.md` | Codex 用户级全局规则 |
-| Claude Code | `~/.claude/CLAUDE.md` | Claude Code 用户级全局规则（经 `sync-targets.json` 接入） |
-| DeepSeek Harness | `~/.dsh/AGENTS.md` | DSH 用户全局规则入口（经 `sync-targets.json` 接入；只保留可完整读取的入口和细则定位，不复制完整拼接结果） |
+| Antigravity | `~/.gemini/GEMINI.md` | 常驻入口：核心理念、P0 红线、场景索引 |
+| Windsurf | `~/.codeium/windsurf/memories/global_rules.md` | 常驻入口：核心理念、P0 红线、场景索引 |
+| Codex | `~/.codex/AGENTS.md` | 常驻入口：核心理念、P0 红线、场景索引 |
+| Claude Code | `~/.claude/CLAUDE.md` | 常驻入口：核心理念、P0 红线、场景索引（经 `sync-targets.json` 接入） |
+| DeepSeek Harness | `~/.dsh/AGENTS.md` | 常驻入口：核心理念、P0 红线、场景索引（经 `sync-targets.json` 接入） |
+
+完整规则不直接拼接进常驻文件，而是生成为可单独调用的 `base-global-rules` 技能：
+
+| 编辑器 | 规则调用方式 | 主动调用 | 被动调用 |
+|--------|-------------|---------|---------|
+| Codex | `~/.codex/skills/base-global-rules/SKILL.md` | 用户点名或输入 `/base-global-rules` | 命中场景索引时模型自动加载 |
+| Claude Code | `~/.claude/skills/base-global-rules/SKILL.md` | 同上 | 同上 |
+| DeepSeek Harness | `~/.dsh/skills/base-global-rules/SKILL.md` | 同上 | 同上 |
+| Windsurf | `~/.codeium/windsurf/global_workflows/base-global-rules.md` | 用户显式要求按全局规则执行 | 命中场景索引时模型加载工作流 |
+| Antigravity | `~/.gemini/antigravity/global_workflows/base-global-rules.md` | 同上 | 同上 |
+
+> 常驻文件只保证 P0 红线始终可见，篇幅约 7 KB；完整细则、场景执行要求和维护约定通过 `base-global-rules` 技能按需加载，避免每个会话都注入完整拼接结果。
 
 > 修改规则时应先通过 `rules/README.md` 和 `rules/rules-manifest.json` 找到目标源文件；新增规则文件后必须更新 manifest，运行同步脚本后各编辑器自动生效。
 
@@ -325,7 +337,7 @@ python sync-workflows.py --no-git
 | 字段 | 说明 |
 |------|------|
 | `name` | 体检和同步输出中展示的目标名称 |
-| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`assembled_rules` 按 manifest 拼接规则文件、`codex_rules` 按 manifest 拼接并去除 frontmatter、`dsh_rules` 生成 DSH 可完整读取的规则入口、`agents_skills` 由工作流生成 Skill |
+| `mode` | 同步模式：`mirror` 镜像目录、`file` 直接复制文件、`assembled_rules` 按 manifest 拼接规则文件、`codex_rules` 按 manifest 拼接并去除 frontmatter、`rules_stub` 只生成常驻入口和调用指引、`rules_skill` 生成可调用的 `base-global-rules` 技能、`rules_workflow` 给无技能目录的编辑器生成规则工作流、`agents_skills` 由工作流生成 Skill |
 | `source` | 源文件或源目录，默认相对 `sky-rules` 仓库根目录 |
 | `target` | 默认目标路径，支持 `${ROOT}`、`${HOME}`、`~` 和系统环境变量 |
 | `target_env` | 精确覆盖目标路径的环境变量名 |

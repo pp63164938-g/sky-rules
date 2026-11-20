@@ -2,10 +2,18 @@
   "targets": [
     {
       "name": "Claude 全局规则",
-      "mode": "codex_rules",
+      "mode": "rules_stub",
       "source": "rules/rules-manifest.json",
       "target": "${HOME}/.claude/CLAUDE.md",
       "target_env": "SKY_RULES_CLAUDE_RULES_FILE",
+      "detect": "${HOME}/.claude"
+    },
+    {
+      "name": "Claude 全局规则 Skill",
+      "mode": "rules_skill",
+      "source": "rules/rules-manifest.json",
+      "target": "${HOME}/.claude/skills",
+      "target_env": "SKY_RULES_CLAUDE_SKILLS_DIR",
       "detect": "${HOME}/.claude"
     },
     {
@@ -20,10 +28,18 @@
     },
     {
       "name": "DeepSeek Harness 全局规则",
-      "mode": "dsh_rules",
+      "mode": "rules_stub",
       "source": "rules/rules-manifest.json",
       "target": "${HOME}/.dsh/AGENTS.md",
       "target_env": "SKY_RULES_DSH_RULES_FILE",
+      "detect": "${HOME}/.dsh"
+    },
+    {
+      "name": "DeepSeek Harness 全局规则 Skill",
+      "mode": "rules_skill",
+      "source": "rules/rules-manifest.json",
+      "target": "${HOME}/.dsh/skills",
+      "target_env": "SKY_RULES_DSH_SKILLS_DIR",
       "detect": "${HOME}/.dsh"
     },
     {

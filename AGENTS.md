@@ -78,7 +78,8 @@ python3 scripts/check-rules.py
 
 同步后需要说明：
 
-- 全局规则是否同步到 Codex `~/.codex/AGENTS.md`、Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`；DeepSeek Harness 是否生成可完整读取的 `~/.dsh/AGENTS.md` 入口。
+- 全局规则是否同步到 Codex `~/.codex/AGENTS.md`、Antigravity `~/.gemini/GEMINI.md`、Windsurf `~/.codeium/windsurf/memories/global_rules.md`、DeepSeek Harness `~/.dsh/AGENTS.md`；这些文件只承载常驻入口和 P0 红线。
+- `base-global-rules` 可调用技能是否生成到 Codex / Claude Code / DeepSeek Harness 的 Skills 目录，以及 Windsurf / Antigravity 的全局规则工作流；用户可显式调用，模型在命中场景索引时自动加载。
 - 工作流是否同步到 Windsurf / Antigravity 工作流目录。
 - `workflows/references/` 是否按归属同步到普通工作流目录和对应 Codex Skill。
 - Codex Skills 是否生成到 `~/.codex/skills/`；Claude Code Skills 是否生成到 `~/.claude/skills/`；DeepSeek Harness Skills 是否生成到 `~/.dsh/skills/`。
