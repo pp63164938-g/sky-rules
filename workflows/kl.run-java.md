@@ -26,7 +26,7 @@ allow_implicit_invocation: false
 2. 切换环境只改启动参数，不改项目代码。密码只出现在当次命令或本机 `$env:TEMP` 临时 `.props` 文件里，不写进技能，不提交。没有对应 values 时，只传 `-Dspring.profiles.active=<环境>`，缺账号就问用户。
 3. **禁止假定同名 K8s 内网域名指向同一套 Nacos**：不同环境的 values 可能都写 `*.svc.cluster.local`，但在各自集群内指向不同 Nacos 实例，而本机办公网 DNS 常固定解析到单一集群（如 `dev`）；同时跨集群环境的 Nacos 外部域名可能只开放 HTTP 80 而未开放 Nacos 2.x 客户端必需的 gRPC 端口（`端口 + 1000`）。切非默认环境前，先在本机核对 `NACOS_HOST` 解析落点与 gRPC 可达性：
    - 若同一配置中心按后缀区分环境且 gRPC 可达，传入对应 `NACOS_*` 与 `-Dspring.profiles.active=<环境>`。
-   - 若目标环境 Nacos 仅 HTTP 配置接口可达而 gRPC 不可达，或本机 DNS 固定落到另一集群 Nacos：禁止拿跨集群密码硬撞，也禁止在主数据源仍连旧集群库时宣称已切到目标环境；应通过可达 HTTP 接口拉取目标环境配置到 `$env:TEMP` 用 `--spring.config.additional-location` 加载（或结合用户已确认的目标库凭证显式覆盖 `spring.datasource.dynamic.datasource.<名称>.url/username/password` / `spring.datasource.*`，并将集群内地址如 Doris 内网端口替换为注释或公共配置标明的集群外端口）。
+   - 若目标环境 Nacos 仅 HTTP 配置接口可达而 gRPC 不可达，或本机 DNS 固定落到另一集群 Nacos：禁止拿跨集群密码硬撞，也禁止在主数据源仍连旧集群库时宣称已切到目标环境；应通过可达 HTTP 接口拉取目标环境配置到 `$env:TEMP`，在 `.props` 中以 `-Dspring.config.additional-location=file:<正斜杠路径>` 加载（多文件按公共配置在前、应用配置在后逗号分隔；或结合用户已确认的目标库凭证显式覆盖 `spring.datasource.dynamic.datasource.<名称>.url/username/password` / `spring.datasource.*`，并将集群内地址如 Doris 内网端口替换为注释或公共配置标明的集群外端口）。
 
 ## 步骤
 
@@ -45,7 +45,7 @@ Get-CimInstance Win32_Process -Filter "Name='java.exe'" | Where-Object { $_.Comm
    生成 classpath 的准备步骤（代码或依赖变化时执行）：
 
 ```powershell
-mvn -q compile "-DincludeScope=runtime" "-DoutputFile=$env:TEMP\kl-run-java-<artifactId>-cp.txt" dependency:build-classpath; $cp = "target\classes;" + ([System.IO.File]::ReadAllText("$env:TEMP\kl-run-java-<artifactId>-cp.txt").Trim()); [System.IO.File]::WriteAllText("$env:TEMP\kl-run-java-<artifactId>.argfile", $cp, (New-Object System.Text.UTF8Encoding($false)))
+mvn -q compile "-Dmdep.includeScope=runtime" "-Dmdep.outputFile=$env:TEMP\kl-run-java-<artifactId>-cp.txt" dependency:build-classpath; $cp = "target\classes;" + ([System.IO.File]::ReadAllText("$env:TEMP\kl-run-java-<artifactId>-cp.txt").Trim()); [System.IO.File]::WriteAllText("$env:TEMP\kl-run-java-<artifactId>.argfile", $cp, (New-Object System.Text.UTF8Encoding($false)))
 ```
 
 4. **健康检查与最终生效环境实证**：

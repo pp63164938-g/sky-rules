@@ -14,7 +14,7 @@
 | 现象信号 | 根因辨析与处理动作 |
 | --- | --- |
 | Nacos 报 `403 unknown user!` 或 `auth failed` | 先用 `Resolve-DnsName` 核对 `NACOS_HOST`（尤其是 `*.svc.cluster.local`）在本机实际落向哪个集群。不同集群的容器部署清单常复用同名 K8s 内网域名，本机 DNS 往往固定指向默认开发集群，拿另一集群的 Nacos 密码去登默认集群必报 `403`。确认落错集群时禁止继续试密码，改走目标环境可达地址或 HTTP 配置拉取落地加载。 |
-| Nacos 2.x 客户端连外部域名报 `Server check fail` / `9848` 超时 | Nacos 2.x SDK 除 HTTP 端口外还需直连 `端口 + 1000` 的 gRPC 端口（如 `8848 -> 9848`），而外部七层网关通常只暴露 HTTP `80`。先测目标集群 Pod / Service 网段是否直连可达（可达则直接用目标 Nacos 内网 IP + `8848`）；若仅 HTTP `80` 可达，则通过 HTTP 接口拉取公共配置与应用配置到 `$env:TEMP`，搭配 `-Dspring.cloud.nacos.config.enabled=false`、`-Dspring.cloud.nacos.discovery.enabled=false` 与 `--spring.config.additional-location` 启动。 |
+| Nacos 2.x 客户端连外部域名报 `Server check fail` / `9848` 超时 | Nacos 2.x SDK 除 HTTP 端口外还需直连 `端口 + 1000` 的 gRPC 端口（如 `8848 -> 9848`），而外部七层网关通常只暴露 HTTP `80`。先测目标集群 Pod / Service 网段是否直连可达（可达则直接用目标 Nacos 内网 IP + `8848`）；若仅 HTTP `80` 可达，则通过 HTTP 接口拉取公共配置与应用配置到 `$env:TEMP`，搭配 `-Dspring.cloud.nacos.config.enabled=false`、`-Dspring.cloud.nacos.discovery.enabled=false` 与 `-Dspring.config.additional-location=file:<公共配置正斜杠路径>,file:<应用配置正斜杠路径>` 启动。 |
 | 进程健康检查 `UP`，但 `/actuator/env` 显示 `spring.profiles.active` 被覆盖回其他环境，或主数据源仍连旧集群库 | 所连 Nacos 中缺少目标 `<app>-<profile>.yml`，回退加载了默认 `<app>.yml`，或数据源 URL 在远端配置中写死了内网主机而未引用命令行传入的 `-D<DB>_ADDRESS` 占位符。必须拉取目标环境真实配置或显式覆盖 `spring.datasource.dynamic.datasource.<名称>.url/username/password`（单数据源为 `spring.datasource.*`），直至 `/actuator/env` 实测连接主机与目标一致。 |
 
 ## 3. 数据源与外部组件层
@@ -24,7 +24,8 @@
 | MySQL 报 `Access denied for user '...'@'...' (using password: NO)` | 注意末尾是 `NO`：说明密码占位符未解析为空，或未传对应密码属性（而非密码错）。核对配置中心实际引用的属性名并补齐键值，或检查该子数据源是否为非主链路库。 |
 | MySQL 报 `Access denied for user '...'@'...' (using password: YES)` | 末尾是 `YES`：说明已传非空密码，但用户名、密码与当前实际连接的目标 MySQL 实例不匹配（常见于拿 A 环境账密连到了 B 环境实例，或 `.props` 中存在同名重复键被后置旧值覆盖）。先核对实际连接的实例主机名与 `.props` 唯一键值；账密缺失时停下向用户索取。 |
 | 启动卡在某个数据源初始化数分钟无响应，随后才抛连接超时 | JDBC URL 含 `autoReconnect=true&maxReconnects=100`，遇到本机不通的内网节点（如集群内 Doris FE 端口）会循环重连百次导致假卡死。先检查配置注释是否有集群外端口替换说明；若该数据源属于旁路模块，先搜 `@DS("<名称>")` 确认未命中当前验证主链路后，加 `-Dspring.datasource.dynamic.datasource.<名称>.lazy=true` 跳过启动期建池，并在回执中披露受影响功能。 |
-| 调度中心（如 `xxl-job`）或旁路监控在本地报注册失败 / 连接拒绝 | 若仅因本机不在容器网段无法反向注册且不阻断主进程监听，不要改业务代码；确认为非阻塞项或在本地临时关闭自动注册（如 `-Dxxl.job.enabled=false`，视组件支持），并在回执「忽略 / 懒加载项」说明。 |
+| 离线加载配置启动带 Dubbo 3.x 的服务时报 `IllegalStateException: No such any registry to reference ...` | 关闭 Spring Cloud Nacos 后，不要把 `dubbo.registry.address` 改为空、`N/A` 或 `multicast://...`，也不要设 `dubbo.registry.subscribe=false`，否则 Dubbo 3.x 判定无可用订阅注册中心会直接阻断启动。保留项目原有可达注册中心配置，仅加 `-Ddubbo.registry.register=false`（防止本机注册成 Provider 劫持公共环境流量）和 `-Ddubbo.consumer.check=false`（防止缺提供者阻断启动），并在回执「忽略 / 懒加载项」说明。 |
+| 调度中心（如 `xxl-job`）或旁路监控在本地报注册失败 / 连接拒绝，或连共享环境（如 `test`）需防抢占任务 | 不要改业务代码；切到 `test` 等共享环境时即使不报错也应主动关闭本地执行器注册，防止本机抢占集群定时任务。先查项目 `XxlJobConfig` 的 `@ConditionalOnProperty` 确认真实开关（如昆仑系常用 `-Ddeploy.type=replica`，直接传 `-Dxxl.job.enabled=false` 可能无效）；确认非阻塞或已关闭后在回执「忽略 / 懒加载项」说明。 |
 
 ## 4. JVM、端口、编码与终端交互层
 
@@ -34,4 +35,5 @@
 | `InaccessibleObjectException: Unable to make protected final java.lang.Class java.lang.ClassLoader.defineClass(...)`（常见于 Dubbo / Javassist / CGLIB） | JDK 9+ 模块封装拦截反射。不要升级依赖绕过；从项目 `document/k8s/*-values*.yaml` 的 `DYNAMIC_JAVA_OPTS` 提取全部 `--add-opens=...` 补入启动命令并固化保留。 |
 | 本地直连报登录用户为空，或浏览器 CORS 预检失败 | 绕过了网关注入的用户头和跨域头。确认已生成 `LocalDevRun.java` 且启动参数包含 `-Dlocal.run=true`。 |
 | 控制台中文乱码，英文正常 | Windows 终端代码页与 UTF-8 输出不一致。启动前带 `chcp 65001` 与三个 `encoding=UTF-8` 参数；核对日志直接用 UTF-8 读取 `logback*.xml` 指向的日志文件。 |
+| IDE 控制台里多行日志叠在同一行、后输出的内容覆盖前面的，或中文显示成另一个字（如「准」显示成「準」）；同一时间的日志文件内容正常 | 日志格式用了 Spring Boot 默认的 `%clr(...)` 彩色输出，每行带 ANSI 转义序列。IDE 控制台不认这些序列，把其中的控制字符当成移动光标或回车执行，导致覆盖打印；编码参数只管字符解码，管不了换行符。不要改 `logback*.xml` 的 pattern 或 encoder（会影响容器内日志）。在 IDE 运行配置的 VM options 加 `-Dspring.output.ansi.enabled=never`，让 `%clr` 原样输出文字；中文错字同时补三个 `encoding=UTF-8` 参数。日志文件 appender 若也用了同一个 PATTERN 不受影响，文件里没有光标概念。 |
 | PowerShell 粘贴命令后出现 `>>` 续行符不执行 | 粘贴内容含未闭合引号、行尾反引号 `` ` `` 换行或多行块。先按 `Ctrl+C` 退回普通 `PS ...>` 提示符，再改用无反引号换行的完整闭合单行命令执行。 |
