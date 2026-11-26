@@ -42,6 +42,11 @@
       "description": "JS/TS 注释、TypeScript 类型处理、枚举映射与条件分支、相等运算符、函数抽象边界、变量命名"
     },
     {
+      "path": "lang/java.md",
+      "title": "Java 语言规范（个人通用）",
+      "description": "个人通用 Java 写法，包含高价值过程注释规范与防老代码退化边界"
+    },
+    {
       "path": "frontend/10-components-types.md",
       "title": "前端组件函数类型查证",
       "description": "组件 / 函数 / Hook 查证、公共能力复用、业务组件边界、前端业务类型位置"

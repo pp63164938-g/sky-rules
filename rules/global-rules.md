@@ -1,4 +1,4 @@
-﻿---
+---
 trigger: always_on
 alwaysApply: true
 ---
@@ -24,7 +24,13 @@ alwaysApply: true
 
 ## 规范来源与冲突优先级
 
-规则文件标注来源：企业规范放在 `rules/enterprise/<企业标识>/`，个人意向放在其他规则目录。当前 sky 的维护入口是 `rules/enterprise/sky/README.md`。冲突时优先级：**用户最新确认 > 当前任务命中的企业规范 > 个人意向**；个人意向只补企业规范的空白，不覆盖企业口径。同一任务命中多家企业且口径冲突时，先确认使用哪一家。冲突发生时必须显性告知冲突点、双方口径和实际执行依据。
+规则文件标注来源：企业规范放在 `rules/enterprise/<企业标识>/`，个人规则放在其他规则目录。当前 sky 的维护入口是 `rules/enterprise/sky/README.md`。冲突裁决原则如下：
+
+- **有效优先级**：**用户最新确认 > 当前任务命中的企业明确条文 > 个人规则**。
+- **空白与占位不压过个人**：企业规范未涉及的主题，或仅写“原文未到位 / 待补充 / 按项目已有风格处理”等兜底占位时，视为企业空白，由个人规则直接补位生效。
+- **无禁令增强直接叠加**：个人规则补充了更明确的做法且企业明确条文未禁止时，不视为冲突，叠加生效。
+- **真互斥冲突必须显性告知**：仅当企业存在明确条文且与个人规则互斥时，默认按企业明确条文执行，并显性告知冲突点、双方口径和实际执行依据，由用户决定是否覆盖。
+- **多企业冲突**：同一任务命中多家企业且口径冲突时，先确认使用哪一家。
 
 ## 场景索引
 
@@ -37,7 +43,7 @@ alwaysApply: true
 | 前端页面 / 组件 / 样式 / i18n / Icon | `rules/frontend/` 对应规则、`组件 / 函数 / Hook 使用前查证规范`、`CSS/SCSS 样式规范` |
 | 后端接口实现 / 数据库 / 鉴权 / 任务缓存 | `rules/enterprise/sky/backend/` 对应规则、`后端接口契约与服务分层规范`、`后端数据持久化与事务规范` |
 | 多版本本地联调 / 灰度版本隔离 | `rules/enterprise/sky/backend/50-multi-version-local-debug.md`、`base-run-dev`、`kl-gen-page` |
-| 语言层规范匹配（注释 / 类型 / 枚举分支 / 函数抽象） | `package.json` 项目读 `rules/lang/js-ts.md`；`pom.xml` / `build.gradle` 项目默认读 `rules/enterprise/sky/lang/java.md`；禁止默认「后端 = Java」「JS = 前端」 |
+| 语言层规范匹配（注释 / 类型 / 枚举分支 / 函数抽象） | `package.json` 项目读 `rules/lang/js-ts.md`；`pom.xml` / `build.gradle` 项目读 `rules/lang/java.md`，命中企业时同时读 `rules/enterprise/<企业标识>/lang/java.md`（当前 sky 为 `rules/enterprise/sky/lang/java.md`）并按冲突裁决原则生效；禁止默认「后端 = Java」「JS = 前端」 |
 | 全栈开发 / 跨端测试 / 发布回滚 | `全栈测试、迁移与发布规范`、`rules/enterprise/sky/backend/` 对应规则 |
 | 通用开发边界 / 需求读取 / Git / 终端验证 | `rules/common/` 对应规则、`禁止自行发散`、`代码生成后全局规范自检门禁` |
 | 查证收口 / 任务看起来停在半截 | `查证收口与回合可见性门禁` |
