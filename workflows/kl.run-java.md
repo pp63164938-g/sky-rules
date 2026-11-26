@@ -91,7 +91,7 @@ mvn -q compile "-Dmdep.includeScope=runtime" "-Dmdep.outputFile=$env:TEMP\kl-run
 【禁止提交】【禁止推送】这个文件只留在本机。不要执行 git add，提交前如果它出现在暂存区，先拿掉。
 ```
 
-这个文件负责本地登录用户和跨域。`staffId`、`jobNumber`、`name` 用用户提供的值。不要用 `@Profile` 绑定 `dev` 或 `test`，否则切换环境后补丁不生效。用 `@ConditionalOnProperty(name = "local.run", havingValue = "true")`。凡是本地直连启动，命令里都加 `-Dlocal.run=true`，和 `-Dspring.profiles.active` 分开。没有这个参数时，补丁不加载。
+这个文件负责本地登录用户和跨域。`staffId`、`jobNumber`、`name` 用用户提供的值；构造登录上下文对象（如用户信息与权限对象）时，必须按当前项目的实际类定义核对并把所有集合类字段（如部门列表、角色列表、可见人员列表等）初始化为空集合（如 `Collections.emptyList()`），不得留 `null`，避免下游直接 `.stream()` 或遍历触发空指针（需要按特定部门/角色联调时再按需填入测试对象）。不要用 `@Profile` 绑定 `dev` 或 `test`，否则切换环境后补丁不生效。用 `@ConditionalOnProperty(name = "local.run", havingValue = "true")`。凡是本地直连启动，命令里都加 `-Dlocal.run=true`，和 `-Dspring.profiles.active` 分开。没有这个参数时，补丁不加载。
 
 ### 2. VS Code 调试配置
 
