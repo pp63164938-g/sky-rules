@@ -47,7 +47,7 @@
 | `enterprise/sky/lang/java.md` | sky Java 企业原文 | 只收录 sky 企业后端文档原文，不收开发总结 |
 | `enterprise/sky/practice/java.md` | sky Java 实践总结 | 开发 sky Java 项目时总结、企业文档未写的写法 |
 | `common/80-terminal-node-model.md` | 通用终端文件 Node 模型 | 终端文件编码、Node 版本管理、模型专用规范 |
-| `common/90-terminal-command-error.md` | 通用终端同步验证与错误处理 | 终端命令执行、Vite 验证分级、AI 规则同步验证、错误处理与用户感知 |
+| `common/90-terminal-command-error.md` | 通用终端同步验证与错误处理 | 终端命令执行、前后端编译构建与测试按需触发、AI 规则同步验证、错误处理与用户感知 |
 | `projects/skyline-kunlun-ui-main.md` | skyline-kunlun-ui-main 项目规则 | Kunlun Element Plus namespace 与运行时前缀规范 |
 | `projects/buka-laaffic-ui-customer.md` | buka-laaffic 项目规则 | buka-laaffic-ui-customer 专用 i18n 与简繁体规则 |
 | `projects/itnio-ui-customer.md` | itnio 项目规则 | itnio-ui-customer 专用错误码、错误提示、扩展前确认规则 |

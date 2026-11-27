@@ -19,7 +19,7 @@
    - 本地 CLI 检查结果：`node_modules/.bin` 中是否存在 Prettier / ESLint / Biome / Stylelint 等可执行文件；
    - VS Code 配置检查结果：是否存在 `.vscode/settings.json`，是否开启 `editor.formatOnSave`，以及 `editor.defaultFormatter` / `codeActionsOnSave` 指向什么工具；
    - 执行或未执行结论：实际执行了哪个命令；若未执行，说明是因为缺少项目脚本、缺少本地 CLI，还是只有编辑器插件能力无法由 Codex 稳定触发。
-10. **Vite 项目不默认 build**：格式化验证优先使用轻量命令，不得把 `npm run build`、`pnpm build`、`vite build` 当作默认格式化或验证步骤。
+10. **不默认触发编译 / 构建 / 全量检查**：格式化仅针对本次修改文件执行轻量单文件命令，不得把前后端编译、构建、项目级类型检查或测试套件当作默认格式化或验证步骤。
 
 **判断标准**：
 
